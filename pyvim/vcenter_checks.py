@@ -63,7 +63,7 @@ def checkdns(hostname, ip):
 
         
     except subprocess.CalledProcessError as err:
-        raise ValueError("ERROR - The vCenter FQDN is not resolving")
+        raise ValueError("ERROR - Failure in the NSLookup subprocess call")
 
 def check_active(host):
     if os.system("ping -c 3 " + host.strip(";") + ">/dev/null 2>&1" ) == 0:
@@ -145,7 +145,7 @@ def get_storageprofile(sp_name, pbmContent ):
     )
     #DEBUGprint(profileIds)
     if len(profileIds) > 0:
-        print("\t Retrieved Storage Profiles.")
+        #DEBUGprint("\t Retrieved Storage Profiles.")
         profiles = pm.PbmRetrieveContent(profileIds=profileIds)
         obj = None
         for profile in profiles:
@@ -204,14 +204,14 @@ def check_cluster_readiness(vc_session, vchost, cluster_id):
             for c in wcp_incompat_clusters:
                 #print("cluster is {}".format(c['cluster']))
                 if c['cluster'] == cluster_id:
-                    print(CRED +"\t ERROR - Cluster {} is NOT compatible".format(cluster_id) + CEND)
+                    print(CRED +"\t ERROR - Cluster {} is NOT compatible for reasons listed below.".format(cluster_id) + CEND)
                     reasons = c["incompatibility_reasons"]
                     #print(reasons)
                     for reason in reasons:
-                        print(CRED +"\t Reason-{}".format(reason['default_message'])+ CEND)
+                        print(CRED +"\t + Reason-{}".format(reason['default_message'])+ CEND)
                     break
             if not reasons:
-                print("Couldnt find cluster {} in list of incompatible clusters".format(cluster_id)) 
+                print(CRED +"\t ERROR -Couldnt find cluster {} in list of incompatible clusters".format(cluster_id)+ CEND) 
             return reasons   
 
 #################################   MAIN   ################################
@@ -224,11 +224,16 @@ def main():
         #else:
             #DEBUG# print(CGRN +"\t SUCCESS - Found value, {} for key, {}".format(v,k)+ CEND) 
     
-    print("\n2-Checking Name Resolution for vCenter")
+    print("\n2-Checking Network Communication for vCenter")
     # Check if VC is resolvable and responding
-    checkdns(cfg_yaml["VC_HOST"], cfg_yaml["VC_IP"] )
     print("  2a-Checking IP is Active for vCenter")
     vc_status = check_active(cfg_yaml["VC_IP"])
+    print("  2b-Checking DNS Servers are reachable on network")
+    for dns_svr in cfg_yaml["DNS_SERVERS"]:
+        check_active(dns_svr)
+    print("  2c-Checking Name Resolution for vCenter")
+    checkdns(cfg_yaml["VC_HOST"], cfg_yaml["VC_IP"] )
+ 
 
     print("\n3-Checking VC is reachable via API using provided credentials")
     # Connect to vCenter and return VAPI content objects
@@ -274,7 +279,7 @@ def main():
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_WKLD_PG'])
             
             # Check for the HAProxy Management IP 
-            print("\n11-Checking for HAProxy VM")
+            print("\n11-Checking HAProxy Health")
             print("  11a-Checking reachability of HAProxy Frontend IP")
             haproxy_status = check_active(cfg_yaml["HAPROXY_IP"])
 

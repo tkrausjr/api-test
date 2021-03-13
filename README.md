@@ -16,7 +16,7 @@ On Ubuntu 18.04 with Python3 already installed.
 ```
 git clone git@gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git
 cd wcp-precheck/pyvim
-git fetch
+chmod +x ./vcenter_checks.py 
 cp ./test_params.yaml ~/test_params.yaml
 vi ~/test_params.yaml    ### See Below of explanation
 pip install pyvmomi
@@ -76,10 +76,11 @@ ESX_PWD: '********'           #  ESX host password
 ### Validating the environment.
 To run the validation script
 ``` bash
+
 ❯ cd github/wcp-precheck/pyvim
 
-❯ python3 vcenter_checks.py -n vsphere
-❯ /usr/local/bin/python3 /Users/kraust.com/github/wcp-precheck/pyvim/vcenter_checks.py
+❯ vcenter_checks.py -n vsphere
+
 Network Type is  vsphere 
 Looking in /Users/kraust.com for test_params.yaml file
 
