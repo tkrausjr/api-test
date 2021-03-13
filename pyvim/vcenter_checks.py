@@ -47,12 +47,21 @@ def checkdns(hostname, ip):
     ## Validate Name Resolution for a hostname / IP pair
     try:
         for d in cfg_yaml["DNS_SERVERS"]:
-            output = subprocess.check_output(['nslookup', cfg_yaml["VC_HOST"], str(d)], universal_newlines=True)
-            res = dict(map(str.strip, sub.split(':', 1)) for sub in output.split('\n') if ':' in sub)
-            if cfg_yaml["VC_IP"] != res['Address']:
+            fwd_lookup = subprocess.check_output(['dig', cfg_yaml["VC_HOST"], '+short', str(d)], universal_newlines=True).strip()
+            rev_lookup = subprocess.check_output(['dig', '-x', cfg_yaml["VC_IP"], '+short', str(d)], universal_newlines=True).strip()[:-1]
+
+            if cfg_yaml["VC_IP"] != fwd_lookup:
                 raise ValueError(CRED + "\t ERROR - The Hostname, " + hostname + " does not resolve to the IP " + ip + CEND)
             else:
                 print(CGRN +"\t SUCCESS-The Hostname, " + hostname + " resolves to the IP " + ip + CEND)
+            
+            if cfg_yaml["VC_HOST"] != rev_lookup:
+                raise ValueError(CRED + "\t ERROR - The IP, " + ip + " does not resolve to the Hostname " + hostname + CEND)
+            else:
+                print(CGRN +"\t SUCCESS-The IP, " + ip + " resolves to the Hostname " + hostname + CEND)
+
+
+        
     except subprocess.CalledProcessError as err:
         raise ValueError("ERROR - The vCenter FQDN is not resolving")
 
