@@ -71,7 +71,7 @@ ESX_IPS:
   - '10.173.13.168'
   - '10.173.13.169'
 ESX_USR: 'root'               #  ESX host username
-ESX_PWD: 'VMware1!'           #  ESX host password
+ESX_PWD: '********'           #  ESX host password
 ``` 
 ### Validating the environment.
 To run the validation script
