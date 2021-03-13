@@ -1,29 +1,32 @@
 ### COMMON SETTINGS
-DOMAIN: 'somedomain.com'
-NTP_SERVER: 'time.ntp.com'
+DOMAIN: 'tpmlab.vmware.com'
+NTP_SERVER: 'time.vmware.com'
 DNS_SERVERS:
-  - '10.73.113.190'
+  - '10.173.13.90'
 
 ### Section for VC
-VC_HOST: 'vcsa.somedomain.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
+VC_HOST: 'vcsa.tpmlab.vmware.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
 VC_IP: '10.173.13.81'                      # VCSA IP
 VC_SSO_USER: 'administrator@vsphere.local'
-VC_SSO_PWD: 'somepass'
+VC_SSO_PWD: **********
 VC_DATACENTER: 'Datacenter'
-VC_CLUSTER:  'somedatacenter'
-VC_DATASTORE: 'datastore3'   # Parent ESX host Datastore for the VCSA Appliance
+VC_CLUSTER:  'Nested-TKG-Cluster'
+VC_STORAGEPOLICIES:          # Storage Policies to use 
+  - 'thin'  
+  - 'thinner'      
+VC_DATASTORE: '66-datastore3'    # FUTURE - If needed 
 
+### Section for vSphere Networking Deployments
+VDS_NAME: 'vds-1'
+VDS_MGMT_PG: 'management-vm'
+VDS_PRIMARY_WKLD_PG: 'not_there'
+VDS_WKLD_PG: 'ext-uplink-edge'
+HAPROXY_IP: '192.168.100.163'
+HAPROXY_PORT: 5556      # HAProxy Dataplane API Mgmt Port chosen during OVA Deployment
+HAPROXY_IP_RANGE_START: '10.173.13.38' # HAProxy LB IP Range chosen during OVA Deployment
+HAPROXY_IP_RANGE_SIZE: 29
 
-### Section for ESX Hosts - TBD future
-ESX_IPS:
-  - '10.73.113.167'
-  - '10.73.113.168'
-  - '10.73.113.169'
-ESX_USR: 'root'               #  ESX host username
-ESX_PWD: 'somepass'          #  ESX host password
-
-
-### Section for VDS & DVPG
+### Section for NSX-T Networking Deployments
 VDS_NAME: 'vds-1'
 VDS_MGMT_PG: 'management-vm'
 VDS_UPLINK_PG: 'ext-uplink-edge'
@@ -34,8 +37,13 @@ HOST_TEP_VLAN: 102
 WCP_MGMT_STARTINGIP:
 WCP_MGMT_MASK:
 WCP_MGMT_GATEWAY: 
-WCP_STORAGEPOLICY:
-  
 
+### Section for ESX Hosts - TBD future
+ESX_IPS:
+  - '10.173.13.167'
+  - '10.173.13.168'
+  - '10.173.13.169'
+ESX_USR: 'root'               #  ESX host username
+ESX_PWD: 'VMware1!'           #  ESX host password
 
 

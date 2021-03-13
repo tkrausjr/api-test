@@ -1,4 +1,6 @@
+#!/usr/bin/env python3
 import ssl
+import requests
 import sys
 import json
 import os
@@ -37,25 +39,31 @@ cfg_yaml = yaml.load(open(homedir+"/test_params.yaml"), Loader=yaml.Loader)
 if (host_os != 'Darwin') and (host_os != 'Linux'):
     print(f"Unfortunately {host_os} is not supported")
 
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+headers = {'content-type': 'application/json'}
+
 def checkdns(hostname, ip):
     ## Validate Name Resolution for a hostname / IP pair
     try:
-        for dns in cfg_yaml["DNS_SERVERS"]:
-            fwd_lookup = subprocess.check_output(['dig', cfg_yaml["VC_HOST"], '+short', str(dns)], universal_newlines=True).strip()
-            rev_lookup = subprocess.check_output(['dig', '-x', cfg_yaml["VC_IP"], '+short', str(dns)], universal_newlines=True).strip()[:-1]
-            
+        for d in cfg_yaml["DNS_SERVERS"]:
+            output = subprocess.check_output(['nslookup', cfg_yaml["VC_HOST"], str(d)], universal_newlines=True)
+            res = dict(map(str.strip, sub.split(':', 1)) for sub in output.split('\n') if ':' in sub)
             if cfg_yaml["VC_IP"] != res['Address']:
                 raise ValueError(CRED + "\t ERROR - The Hostname, " + hostname + " does not resolve to the IP " + ip + CEND)
             else:
                 print(CGRN +"\t SUCCESS-The Hostname, " + hostname + " resolves to the IP " + ip + CEND)
-
-            if cfg_yaml["VC_HOST"] != rev_lookup:
-                raise ValueError(CRED + "\t ERROR - The IP, " + ip + " does not resolve to the Hostname " + hostname + CEND)
-            else:
-                print(CGRN +"\t SUCCESS-The IP, " + ip + " resolves to the Hostname " + hostname + CEND)
-
     except subprocess.CalledProcessError as err:
         raise ValueError("ERROR - The vCenter FQDN is not resolving")
+
+def check_active(host):
+    if os.system("ping -c 3 " + host.strip(";") + ">/dev/null 2>&1" ) == 0:
+        print(CGRN +"\t SUCCESS - Can ping {}. ".format(host) + CEND)
+        return 0
+    
+    else:
+        print(CRED +"\t ERROR - Cant ping {}. ".format(host) + CEND)
+        return 1
 
 def vc_connect(vchost, vcuser, vcpass):
     si = None
@@ -128,7 +136,7 @@ def get_storageprofile(sp_name, pbmContent ):
     )
     #DEBUGprint(profileIds)
     if len(profileIds) > 0:
-        print("\tRetrieved Storage Profiles.")
+        print("\t Retrieved Storage Profiles.")
         profiles = pm.PbmRetrieveContent(profileIds=profileIds)
         obj = None
         for profile in profiles:
@@ -138,25 +146,80 @@ def get_storageprofile(sp_name, pbmContent ):
                 obj = profile
                 break
         if not obj:
-            print(CRED + "\tERROR - Storage Profile {} not found".format(sp_name)+ CEND) 
+            print(CRED + "\t ERROR - Storage Profile {} not found".format(sp_name)+ CEND) 
         return obj        
     else:
-        raise RuntimeError(CRED + "\tERROR - No Storage Profiles found or defined ".format(sp_name)+ CEND)
+        print(CRED + "\tERROR - No Storage Profiles found or defined "+ CEND)
 
+
+def check_health(verb, endpoint, port, url):
+    s = requests.Session()
+    s.verify = False
+    if verb=="get":
+        print("\tPerforming Get")
+        response=s.get('https://'+endpoint+':'+str(port)+url, auth=('admin','VMware1!'))
+    elif verb=="post":
+        print("\tPerforming Post")
+        response=s.post('https://'+endpoint+':'+str(port)+url)
+        
+    #DEBUG# print(response)
+    if not response.ok:
+        print(CRED + "\tERROR - Received Status Code {} ".format(response.status_code) + CEND) 
+    else:
+        print(CGRN + "\tSUCCESS - Received Status Code {} ".format(response.status_code) + CEND) 
+       
+def connect_vc_rest(vcip, userid, password):
+    s = requests.Session()
+    s.verify = False
+    # Connect to VCenter and start a session
+    session = s.post('https://' + vcip + '/rest/com/vmware/cis/session', auth=(userid, password))
+    if not session.ok:
+        print(CRED + "\tERROR - Could not establish session to VC, status_code ".format(session.status_code) + CEND) 
+    else:
+        print(CGRN + "\tSUCCESS - Successfully established session to VC, status_code ".format(session.status_code) + CEND) 
+
+    token = json.loads(session.text)["value"]
+    token_header = {'vmware-api-session-id': token}
+    return s
+
+def check_cluster_readiness(vc_session, vchost, cluster_id):
+    response = vc_session.get('https://'+vchost+'/api/vcenter/namespace-management/cluster-compatibility?compatible=False')
+    if response.ok:
+        wcp_incompat_clusters = json.loads(response.text)
+        if len(json.loads(response.text)) == 0:
+            print(CGRN+"\t SUCCESS - All clusters are compatible with WCP"+ CEND)
+        else:
+            # If we Found clusters that are not compatible with WCP
+            #print(type(wcp_incompat_clusters))
+            reasons = None
+            for c in wcp_incompat_clusters:
+                #print("cluster is {}".format(c['cluster']))
+                if c['cluster'] == cluster_id:
+                    print(CRED +"\t ERROR - Cluster {} is NOT compatible".format(cluster_id) + CEND)
+                    reasons = c["incompatibility_reasons"]
+                    #print(reasons)
+                    for reason in reasons:
+                        print(CRED +"\t Reason-{}".format(reason['default_message'])+ CEND)
+                    break
+            if not reasons:
+                print("Couldnt find cluster {} in list of incompatible clusters".format(cluster_id)) 
+            return reasons   
 
 #################################   MAIN   ################################
 def main():
     # TEMP DEBUG - Validate existence of all YAML keys
-    print("\n1-Checking YAML inputs for program are: ")
+    print("\n1-Checking Required YAML inputs for program: ")
     for k, v in cfg_yaml.items():
         if v == None:
             print(CRED +"\t ERROR - Missing required value for ",  k + CEND) 
-        else:
-            print(CGRN +"\t SUCCESS - Found value, {} for key, {}".format(v,k)+ CEND) 
+        #else:
+            #DEBUG# print(CGRN +"\t SUCCESS - Found value, {} for key, {}".format(v,k)+ CEND) 
     
     print("\n2-Checking Name Resolution for vCenter")
     # Check if VC is resolvable and responding
     checkdns(cfg_yaml["VC_HOST"], cfg_yaml["VC_IP"] )
+    print("  2a-Checking IP is Active for vCenter")
+    vc_status = check_active(cfg_yaml["VC_IP"])
 
     print("\n3-Checking VC is reachable via API using provided credentials")
     # Connect to vCenter and return VAPI content objects
@@ -164,23 +227,23 @@ def main():
     
     # If networking type is vSphere
     if network_type=='vsphere':
-
         try:
+            
             # Check for THE DATACENTER
             print("\n4-Checking for the  Datacenter")
             dc = get_obj(vc_content, [vim.Datacenter], cfg_yaml['VC_DATACENTER'])
-            #print("\tFound datacenter named {}. Moving onto next check".format(dc.name)+ CEND)
 
             # Check for the CLUSTER
             print("\n5-Checking for the Cluster")
             cluster = get_cluster(dc, cfg_yaml['VC_CLUSTER'])
-            #print("\tFound Cluster named {}. Moving onto next check".format(cluster.name)+ CEND)
-
+            cluster_id = str(cluster).split(':')[1][:-1]
+            #DEBUG# print(cluster_id)
+            
             # Connect to SPBM Endpoint
             print("\n6-Checking Storage Profiles")
-            print(" 6a-Checking Connecting to SPBM")
+            print("  6a-Checking Connecting to SPBM")
             pbmSi, pbmContent = GetPbmConnection(si._stub)
-            print(" 6b-Getting Storage Profiles from SPBM")
+            print("  6b-Getting Storage Profiles from SPBM")
             storagepolicies = cfg_yaml['VC_STORAGEPOLICIES']
             for policy in storagepolicies:
                 storage_profile= get_storageprofile(policy, pbmContent )
@@ -188,22 +251,48 @@ def main():
             # Check for the Datastore 
             print("\n7-Checking for the Datastores")
             ds = get_obj(vc_content, [vim.Datastore], cfg_yaml['VC_DATASTORE'])
-            #print("\tFound datastore named {}. Moving onto next check".format(ds.name)+ CEND)
 
             # Check for the vds 
             print("\n8-Checking for the vds")
             vds = get_obj(vc_content, [vim.DistributedVirtualSwitch], cfg_yaml['VDS_NAME'])
-            #print("\tFound vds named {}. Moving onto next check".format(vds.name)+ CEND)
 
             # Check for the Primary Workload Network 
             print("\n9-Checking for the Primary Workload Network PortGroup")
             prim_wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_PRIMARY_WKLD_PG'])
-            #print(CGRN +"\tFound PG named {}. Moving onto next check".format(prim_wkld_pg.name)+ CEND)
 
             # Check for the Workload Network 
             print("\n10-Checking for the Workload Network PortGroup")
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_WKLD_PG'])
-            #print("\tFound PG named {}. Moving onto next check".format(wkld_pg.name)+ CEND)
+            
+            # Check for the HAProxy Management IP 
+            print("\n11-Checking for HAProxy VM")
+            print("  11a-Checking reachability of HAProxy Frontend IP")
+            haproxy_status = check_active(cfg_yaml["HAPROXY_IP"])
+
+            if haproxy_status != 1:
+                # Check for the HAProxy Health
+                print("  11b-Checking login to HAPROXY DataPlane API")
+                check_health("get",cfg_yaml["HAPROXY_IP"], str(cfg_yaml["HAPROXY_PORT"]), '/v2/services/haproxy/configuration/backends')
+            else:
+                print("  11b-Skipping HAPROXY DataPlane API Login until IP is Active")
+            
+            # Create VC REST Session
+            print("\n12-Establishing REST session to VC API")
+            vc_session = connect_vc_rest(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
+
+            ## DEBUG AND TEST BELOW
+            datacenter_object = vc_session.get('https://' + cfg_yaml['VC_HOST'] + '/rest/vcenter/datacenter?filter.names=' + "Datacenter")
+            if len(json.loads(datacenter_object.text)["value"]) == 0:
+                print("No datacenter found, please enter valid datacenter name")
+            else:
+                datacenter_id = json.loads(datacenter_object.text)["value"][0].get("datacenter")
+                #DEBUG print(datacenter_id)
+
+            # Check if Cluster is Compatible with WCP
+            print("\n13-Checking if cluster {} is WCP Compatible".format(cluster.name))
+            compatability = check_cluster_readiness(vc_session, cfg_yaml['VC_HOST'], cluster_id)
+
+
 
         except vmodl.MethodFault as e:
             print(CRED +"\tCaught vmodl fault: %s" % e.msg+ CEND)
@@ -211,7 +300,8 @@ def main():
         except Exception as e:
             print(CRED +"\tCaught exception: %s" % str(e)+ CEND)
             pass
-        
+
+
     # If networking type is NSX-T
     if network_type == 'nsxt':
         try:
