@@ -1,0 +1,41 @@
+### COMMON SETTINGS
+DOMAIN: 'somedomain.com'
+NTP_SERVER: 'time.ntp.com'
+DNS_SERVERS:
+  - '10.73.113.190'
+
+### Section for VC
+VC_HOST: 'vcsa.somedomain.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
+VC_IP: '10.173.13.81'                      # VCSA IP
+VC_SSO_USER: 'administrator@vsphere.local'
+VC_SSO_PWD: 'somepass'
+VC_DATACENTER: 'Datacenter'
+VC_CLUSTER:  'somedatacenter'
+VC_DATASTORE: 'datastore3'   # Parent ESX host Datastore for the VCSA Appliance
+
+
+### Section for ESX Hosts - TBD future
+ESX_IPS:
+  - '10.73.113.167'
+  - '10.73.113.168'
+  - '10.73.113.169'
+ESX_USR: 'root'               #  ESX host username
+ESX_PWD: 'somepass'          #  ESX host password
+
+
+### Section for VDS & DVPG
+VDS_NAME: 'vds-1'
+VDS_MGMT_PG: 'management-vm'
+VDS_UPLINK_PG: 'ext-uplink-edge'
+VDS_EDGE_TEP_PG: 'tep-edge'
+HOST_TEP_VLAN: 102
+
+### Section for WCP Supervisor Cluster Deployment
+WCP_MGMT_STARTINGIP:
+WCP_MGMT_MASK:
+WCP_MGMT_GATEWAY: 
+WCP_STORAGEPOLICY:
+  
+
+
+
