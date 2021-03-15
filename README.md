@@ -1,6 +1,6 @@
 # WCP-precheck
 
-## pyVmomi script
+## script functionality
 Python script to validate that various dependencies are in place for a successful WCP installation, including:
 
 1. Check that script parameters are filled in $HOME/test_params.yaml 
