@@ -210,6 +210,7 @@ def connect_vc_rest(vcip, userid, password):
 def check_cluster_readiness(vc_session, vchost, cluster_id):
     response = vc_session.get('https://'+vchost+'/api/vcenter/namespace-management/cluster-compatibility?')
     if response.ok:
+        logger.debug("response text is {}".format(response.text))
         wcp_clusters = json.loads(response.text)
         if len(json.loads(response.text)) == 0:
             logger.error(CGRN+"ERROR - No clusters returned from WCP Check"+ CEND)
@@ -220,8 +221,8 @@ def check_cluster_readiness(vc_session, vchost, cluster_id):
             for c in wcp_clusters:
                 logger.debug("cluster is {}".format(c['cluster']))
                 if c['cluster'] == cluster_id:
-                    if c["compatible"]=="true":
-                        logger.info(CRED +"SUCCESS - Cluster {} IS compatible with Workload Control Plane.".format(cluster_id) + CEND)
+                    if c["compatible"]==True:
+                        logger.info(CGRN +"SUCCESS - Cluster {} IS compatible with Workload Control Plane.".format(cluster_id) + CEND)
                     else:
                         logger.error(CRED +"ERROR - Cluster {} is NOT compatible for reasons listed below.".format(cluster_id) + CEND)
                         reasons = c["incompatibility_reasons"]
