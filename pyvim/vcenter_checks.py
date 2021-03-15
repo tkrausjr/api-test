@@ -78,7 +78,6 @@ def checkdns(hostname, ip):
                 logger.info(CGRN +"SUCCESS-The IP, " + ip + " resolves to the Hostname " + hostname + CEND)
 
 
-        
     except subprocess.CalledProcessError as err:
         raise ValueError("ERROR - Failure in the NSLookup subprocess call")
 
@@ -316,7 +315,7 @@ def main():
             vc_session = connect_vc_rest(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
 
             ## DEBUG AND TEST BELOW
-            datacenter_object = vc_session.get('https://' + cfg_yaml['VC_HOST'] + '/rest/vcenter/datacenter?filter.names=' + "Datacenter")
+            datacenter_object = vc_session.get('https://' + cfg_yaml['VC_HOST'] + '/rest/vcenter/datacenter?filter.names=' + cfg_yaml['VC_DATACENTER'])
             if len(json.loads(datacenter_object.text)["value"]) == 0:
                 logger.error("ERROR - No datacenter found, please enter valid datacenter name")
             else:
