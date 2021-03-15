@@ -24,16 +24,16 @@ CGRN = '\033[92m'
 
 # Setup logging parser
 logger=logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(levelname)s: %(asctime)s: %(name)s: %(message)s', "%Y-%m-%d %H:%M:%S")
 
 file_handler = logging.FileHandler('wcp_precheck_results.log')
-file_handler.setLevel(logging.DEBUG)
+file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(formatter)
 
 stream_handler=logging.StreamHandler()
 stream_handler.setFormatter(formatter)
-stream_handler.setLevel(logging.INFO)
+stream_handler.setLevel(logging.DEBUG)
 
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
