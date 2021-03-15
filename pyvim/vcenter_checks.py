@@ -178,7 +178,7 @@ def get_storageprofile(sp_name, pbmContent ):
         logger.error(CRED + "ERROR - No Storage Profiles found or defined "+ CEND)
 
 
-def check_health_with_auth(verb, endpoint, port, url, user, password):
+def check_health_with_auth(verb, endpoint, port, url, username, password):
     s = requests.Session()
     s.verify = False
     if verb=="get":
@@ -186,7 +186,7 @@ def check_health_with_auth(verb, endpoint, port, url, user, password):
         response=s.get('https://'+endpoint+':'+str(port)+url, auth=(username,password))
     elif verb=="post":
         logger.debug("Performing Post")
-        response=s.post('https://'+endpoint+':'+str(port)+url)
+        response=s.post('https://'+endpoint+':'+str(port)+url, auth=(username,password))
         
     logger.debug(response)
     if not response.ok:
@@ -306,7 +306,8 @@ def main():
             if haproxy_status != 1:
                 # Check for the HAProxy Health
                 logger.info("11b-Checking login to HAPROXY DataPlane API")
-                check_health_with_auth("get",cfg_yaml["HAPROXY_IP"], str(cfg_yaml["HAPROXY_PORT"]), '/v2/services/haproxy/configuration/backends', cfg_yaml["HAPROXY_USER"], cfg_yaml["HAPROXY_PW"])
+                check_health_with_auth("get",cfg_yaml["HAPROXY_IP"], str(cfg_yaml["HAPROXY_PORT"]), '/v2/services/haproxy/configuration/backends', 
+                cfg_yaml["HAPROXY_USER"], cfg_yaml["HAPROXY_PW"])
             else:
                 logger.info("11b-Skipping HAPROXY DataPlane API Login until IP is Active")
             
@@ -320,7 +321,7 @@ def main():
                 logger.error("ERROR - No datacenter found, please enter valid datacenter name")
             else:
                 datacenter_id = json.loads(datacenter_object.text)["value"][0].get("datacenter")
-                #DEBUG print(datacenter_id)
+                logger.error("Datacenter ID is {}".format(datacenter_id))
 
             # Check if Cluster is Compatible with WCP
             logger.info("13-Checking if cluster {} is WCP Compatible".format(cluster.name))
