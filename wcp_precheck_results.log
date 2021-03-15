@@ -1,0 +1,51 @@
+INFO: 2021-03-15 13:37:46: __main__: Looking in /Users/kraust.com for test_params.yaml file
+INFO: 2021-03-15 13:37:46: __main__: Host Operating System is Darwin.
+INFO: 2021-03-15 13:37:46: __main__: Workload Control Plane Network Type is  vsphere 
+INFO: 2021-03-15 13:37:46: __main__: Begin Testing . . . 
+INFO: 2021-03-15 13:37:46: __main__: 1-Checking Required YAML inputs for program: 
+ERROR: 2021-03-15 13:37:46: __main__: [91mERROR - Missing required value for WCP_MGMT_STARTINGIP[0m
+ERROR: 2021-03-15 13:37:46: __main__: [91mERROR - Missing required value for WCP_MGMT_MASK[0m
+ERROR: 2021-03-15 13:37:46: __main__: [91mERROR - Missing required value for WCP_MGMT_GATEWAY[0m
+INFO: 2021-03-15 13:37:46: __main__: 2-Checking Network Communication for vCenter
+INFO: 2021-03-15 13:37:46: __main__: 2a-Checking IP is Active for vCenter
+INFO: 2021-03-15 13:37:48: __main__: [92mSUCCESS - Can ping 10.173.13.81. [0m
+INFO: 2021-03-15 13:37:48: __main__: 2b-Checking DNS Servers are reachable on network
+INFO: 2021-03-15 13:37:50: __main__: [92mSUCCESS - Can ping 10.173.13.90. [0m
+INFO: 2021-03-15 13:37:50: __main__: 2c-Checking Name Resolution for vCenter
+INFO: 2021-03-15 13:37:51: __main__: Checking DNS Server 10.173.13.90 for A Record for vcsa.tpmlab.vmware.com
+ERROR: 2021-03-15 13:37:51: __main__: [91mERROR - The Hostname, vcsa.tpmlab.vmware.com does not resolve to the IP 10.173.13.81[0m
+ERROR: 2021-03-15 13:37:51: __main__: [91mERROR - The IP, 10.173.13.81 does not resolve to the Hostname vcsa.tpmlab.vmware.com[0m
+INFO: 2021-03-15 13:37:51: __main__: 3-Checking VC is reachable via API using provided credentials
+INFO: 2021-03-15 13:37:51: __main__: Trying to connect to VCENTER SERVER . . .
+INFO: 2021-03-15 13:37:52: __main__: [92mSUCCESS-Connected to vCenter VMware vCenter Server[0m
+INFO: 2021-03-15 13:37:52: __main__: 4-Checking for the  Datacenter
+INFO: 2021-03-15 13:37:53: __main__: [92mSUCCESS - Managed Object Datacenter found.[0m
+INFO: 2021-03-15 13:37:53: __main__: 5-Checking for the Cluster
+INFO: 2021-03-15 13:37:53: __main__: [92mSUCCESS - Cluster Object Nested-TKG-Cluster found.[0m
+INFO: 2021-03-15 13:37:53: __main__: 6-Checking Storage Profiles
+INFO: 2021-03-15 13:37:53: __main__: 6a-Checking Connecting to SPBM
+INFO: 2021-03-15 13:37:53: __main__: 6b-Getting Storage Profiles from SPBM
+INFO: 2021-03-15 13:37:54: __main__: [92mSUCCESS - Found Storage Profile thin.[0m
+ERROR: 2021-03-15 13:37:55: __main__: [91mERROR - Storage Profile thinner not found[0m
+INFO: 2021-03-15 13:37:55: __main__: 7-Checking for the Datastores
+INFO: 2021-03-15 13:37:58: __main__: [92mSUCCESS - Managed Object 66-datastore3 found.[0m
+INFO: 2021-03-15 13:37:58: __main__: 8-Checking for the vds
+INFO: 2021-03-15 13:37:59: __main__: [92mSUCCESS - Managed Object vds-1 found.[0m
+INFO: 2021-03-15 13:37:59: __main__: 9-Checking for the Primary Workload Network PortGroup
+ERROR: 2021-03-15 13:38:01: __main__: [91mERROR - Managed Object not_there not found.[0m
+INFO: 2021-03-15 13:38:01: __main__: 10-Checking for the Workload Network PortGroup
+ERROR: 2021-03-15 13:38:04: __main__: [91mERROR - Managed Object ext-uplink-edge not found.[0m
+INFO: 2021-03-15 13:38:04: __main__: 11-Checking HAProxy Health
+INFO: 2021-03-15 13:38:04: __main__: 11a-Checking reachability of HAProxy Frontend IP
+ERROR: 2021-03-15 13:38:17: __main__: [91mERROR - Cant ping 192.168.100.163. [0m
+INFO: 2021-03-15 13:38:17: __main__: 11b-Skipping HAPROXY DataPlane API Login until IP is Active
+INFO: 2021-03-15 13:38:17: __main__: 12-Establishing REST session to VC API
+INFO: 2021-03-15 13:38:17: __main__: [92mSUCCESS - Successfully established session to VC, status_code [0m
+INFO: 2021-03-15 13:38:18: __main__: 13-Checking if cluster Nested-TKG-Cluster is WCP Compatible
+ERROR: 2021-03-15 13:38:18: __main__: [91mERROR - Cluster domain-c30 is NOT compatible for reasons listed below.[0m
+ERROR: 2021-03-15 13:38:18: __main__: [91m+ Reason-Cluster domain-c30 is a personality-manager managed cluster. It currently does not support vSphere namespaces.[0m
+ERROR: 2021-03-15 13:38:18: __main__: [91m+ Reason-Cluster domain-c30 does not have HA enabled.[0m
+ERROR: 2021-03-15 13:38:18: __main__: [91m+ Reason-Cluster domain-c30 is missing compatible NSX-T VDS.[0m
+INFO: 2021-03-15 13:38:18: __main__: ************************************************
+INFO: 2021-03-15 13:38:18: __main__: ** All checks were run. Validation Complete.  **
+INFO: 2021-03-15 13:38:18: __main__: ************************************************
