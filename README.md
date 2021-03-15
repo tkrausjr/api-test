@@ -15,7 +15,10 @@ Python script to validate that various dependencies are in place for a successfu
 ### Preparation steps before you test the environment.
 On Ubuntu 18.04 with Python3 already installed.
 ```
-git clone git@gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git
+git clone https://gitlab.eng.vmware.com/TKGS-TSL/wcp-precheck.git              
+Cloning into 'wcp-precheck'...
+Username for 'https://gitlab.eng.vmware.com':   <VMware User ID IE njones>
+Password for 'https://kraust@gitlab.eng.vmware.com':  <VMware Password>
 cd wcp-precheck/pyvim
 chmod +x ./vcenter_checks.py 
 cp ./test_params.yaml ~/test_params.yaml
