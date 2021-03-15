@@ -209,7 +209,7 @@ def connect_vc_rest(vcip, userid, password):
     return s
 
 def check_cluster_readiness(vc_session, vchost, cluster_id):
-    response = vc_session.get('https://'+vchost+'/api/vcenter/namespace-management/cluster-compatibility?compatible=False')
+    response = vc_session.get('https://'+vchost+'/api/vcenter/namespace-management/cluster-compatibility?')
     if response.ok:
         wcp_clusters = json.loads(response.text)
         if len(json.loads(response.text)) == 0:
