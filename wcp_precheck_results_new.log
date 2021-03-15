@@ -1,0 +1,8 @@
+INFO:__main__:Checking DNS Server 10.173.13.90 for A Record for vcsa.tpmlab.vmware.com
+INFO:__main__:Checking DNS Server 10.173.13.90 for A Record for vcsa.tpmlab.vmware.com
+INFO:__main__:[91m	 ERROR - The Hostname, vcsa.tpmlab.vmware.com does not resolve to the IP 10.173.13.81[0m
+INFO:__main__:[91m	 ERROR - The IP, 10.173.13.81 does not resolve to the Hostname vcsa.tpmlab.vmware.com[0m
+INFO:__main__:Checking DNS Server 10.173.13.90 for A Record for vcsa.tpmlab.vmware.com
+ERROR:__main__:[91m	 ERROR - The Hostname, vcsa.tpmlab.vmware.com does not resolve to the IP 10.173.13.81[0m
+ERROR:__main__:[91m	 ERROR - The IP, 10.173.13.81 does not resolve to the Hostname vcsa.tpmlab.vmware.com[0m
+INFO:__main__:Checking DNS Server 10.173.13.90 for A Record for vcsa.tpmlab.vmware.com

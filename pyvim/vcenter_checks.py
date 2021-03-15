@@ -15,12 +15,29 @@ from pyVim import connect
 from pyVim.task import WaitForTask
 from pyVim.connect import Disconnect
 from pyVmomi import pbm, VmomiSupport
-# rom pyVim.connect import SmartConnect, Disconnect
+import logging
 
 # Define ANSI Colors
 CRED = '\033[91m'
 CEND = '\033[0m'
 CGRN = '\033[92m'
+
+# Setup logging parser
+logger=logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+
+file_handler = logging.FileHandler('wcp_precheck_results_new.log')
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+stream_handler=logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+file_handler.setLevel(logging.DEBUG)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
+
 
 parser = argparse.ArgumentParser(description='vcenter_checks.py validates environments for succcesful Supervisor Clusters setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify environment information to test. Find additional information at: gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git')
 parser.add_argument('--version', action='version',version='%(prog)s v0.02')
@@ -49,14 +66,16 @@ def checkdns(hostname, ip):
         for d in cfg_yaml["DNS_SERVERS"]:
             fwd_lookup = subprocess.check_output(['dig', cfg_yaml["VC_HOST"], '+short', str(d)], universal_newlines=True).strip()
             rev_lookup = subprocess.check_output(['dig', '-x', cfg_yaml["VC_IP"], '+short', str(d)], universal_newlines=True).strip()[:-1]
-
+            logger.info('Checking DNS Server {} for A Record for {}'.format(d, hostname))
+            print(fwd_lookup)
+            print(rev_lookup)
             if cfg_yaml["VC_IP"] != fwd_lookup:
-                raise ValueError(CRED + "\t ERROR - The Hostname, " + hostname + " does not resolve to the IP " + ip + CEND)
+                print(CRED + "\t ERROR - The Hostname, " + hostname + " does not resolve to the IP " + ip + CEND)
             else:
                 print(CGRN +"\t SUCCESS-The Hostname, " + hostname + " resolves to the IP " + ip + CEND)
             
             if cfg_yaml["VC_HOST"] != rev_lookup:
-                raise ValueError(CRED + "\t ERROR - The IP, " + ip + " does not resolve to the Hostname " + hostname + CEND)
+                print(CRED + "\t ERROR - The IP, " + ip + " does not resolve to the Hostname " + hostname + CEND)
             else:
                 print(CGRN +"\t SUCCESS-The IP, " + ip + " resolves to the Hostname " + hostname + CEND)
 
