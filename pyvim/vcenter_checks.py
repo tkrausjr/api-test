@@ -42,8 +42,6 @@ logger.addHandler(stream_handler)
 parser = argparse.ArgumentParser(description='vcenter_checks.py validates environments for succcesful Supervisor Clusters setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify environment information to test. Find additional information at: gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git')
 parser.add_argument('--version', action='version',version='%(prog)s v0.02')
 parser.add_argument('-n','--networking',choices=['nsxt','vsphere'], help='Networking Environment(nsxt, vsphere)', default='vsphere')
-# To make networking positional
-#parser.add_argument('networking',choices=['nsxt','vsphere'], help='Networking Environment(nsxt, vsphere)', default='vsphere')
 network_type=parser.parse_args().networking
 
 currentDirectory = os.getcwd()
@@ -70,12 +68,12 @@ def checkdns(hostname, ip):
             logger.debug("Result of Forward Lookup {}".format(fwd_lookup))
             logger.debug("Result of Reverse Lookup {}".format(rev_lookup))
             if cfg_yaml["VC_IP"] != fwd_lookup:
-                logger.error(CRED + "ERROR - The Hostname, " + hostname + " does not resolve to the IP " + ip + CEND)
+                logger.error(CRED + "ERROR - Missing A Record. The Hostname, " + hostname + " does not resolve to the IP " + ip + CEND)
             else:
                 logger.info(CGRN +"SUCCESS-The Hostname, " + hostname + " resolves to the IP " + ip + CEND)
             
             if cfg_yaml["VC_HOST"] != rev_lookup:
-                logger.error(CRED + "ERROR - The IP, " + ip + " does not resolve to the Hostname " + hostname + CEND)
+                logger.error(CRED + "ERROR - Missing PTR Record. The IP, " + ip + " does not resolve to the Hostname " + hostname + CEND)
             else:
                 logger.info(CGRN +"SUCCESS-The IP, " + ip + " resolves to the Hostname " + hostname + CEND)
 
@@ -180,12 +178,12 @@ def get_storageprofile(sp_name, pbmContent ):
         logger.error(CRED + "ERROR - No Storage Profiles found or defined "+ CEND)
 
 
-def check_health(verb, endpoint, port, url):
+def check_health_with_auth(verb, endpoint, port, url, user, password):
     s = requests.Session()
     s.verify = False
     if verb=="get":
         logger.debug("Performing Get")
-        response=s.get('https://'+endpoint+':'+str(port)+url, auth=('admin','VMware1!'))
+        response=s.get('https://'+endpoint+':'+str(port)+url, auth=(username,password))
     elif verb=="post":
         logger.debug("Performing Post")
         response=s.post('https://'+endpoint+':'+str(port)+url)
@@ -223,14 +221,15 @@ def check_cluster_readiness(vc_session, vchost, cluster_id):
             for c in wcp_incompat_clusters:
                 logger.debug("cluster is {}".format(c['cluster']))
                 if c['cluster'] == cluster_id:
-                    logger.error(CRED +"ERROR - Cluster {} is NOT compatible for reasons listed below.".format(cluster_id) + CEND)
-                    reasons = c["incompatibility_reasons"]
-                    logger.debug(reasons)
-                    for reason in reasons:
-                        logger.error(CRED +"+ Reason-{}".format(reason['default_message'])+ CEND)
+                    if c["compatible"]=="true":
+                        logger.info(CRED +"SUCCESS - Cluster {} IS compatible with Workload Control Plane.".format(cluster_id) + CEND)
+                    else:
+                        logger.error(CRED +"ERROR - Cluster {} is NOT compatible for reasons listed below.".format(cluster_id) + CEND)
+                        reasons = c["incompatibility_reasons"]
+                        logger.debug(reasons)
+                        for reason in reasons:
+                            logger.error(CRED +"+ Reason-{}".format(reason['default_message'])+ CEND)
                     break
-            if not reasons:
-                logger.error(CRED +"ERROR -Couldnt find cluster {} in list of incompatible clusters".format(cluster_id)+ CEND) 
             return reasons   
 
 #################################   MAIN   ################################
@@ -307,7 +306,7 @@ def main():
             if haproxy_status != 1:
                 # Check for the HAProxy Health
                 logger.info("11b-Checking login to HAPROXY DataPlane API")
-                check_health("get",cfg_yaml["HAPROXY_IP"], str(cfg_yaml["HAPROXY_PORT"]), '/v2/services/haproxy/configuration/backends')
+                check_health_with_auth("get",cfg_yaml["HAPROXY_IP"], str(cfg_yaml["HAPROXY_PORT"]), '/v2/services/haproxy/configuration/backends', cfg_yaml["HAPROXY_USER"], cfg_yaml["HAPROXY_PW"])
             else:
                 logger.info("11b-Skipping HAPROXY DataPlane API Login until IP is Active")
             
