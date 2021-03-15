@@ -211,14 +211,14 @@ def connect_vc_rest(vcip, userid, password):
 def check_cluster_readiness(vc_session, vchost, cluster_id):
     response = vc_session.get('https://'+vchost+'/api/vcenter/namespace-management/cluster-compatibility?compatible=False')
     if response.ok:
-        wcp_incompat_clusters = json.loads(response.text)
+        wcp_clusters = json.loads(response.text)
         if len(json.loads(response.text)) == 0:
-            print(CGRN+"SUCCESS - All clusters are compatible with WCP"+ CEND)
+            logger.error(CGRN+"ERROR - No clusters returned from WCP Check"+ CEND)
         else:
             # If we Found clusters that are not compatible with WCP
-            logger.debug(type(wcp_incompat_clusters))
+            logger.debug(type(wcp_clusters))
             reasons = None
-            for c in wcp_incompat_clusters:
+            for c in wcp_clusters:
                 logger.debug("cluster is {}".format(c['cluster']))
                 if c['cluster'] == cluster_id:
                     if c["compatible"]=="true":
