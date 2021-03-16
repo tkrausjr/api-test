@@ -236,6 +236,9 @@ def check_cluster_readiness(vc_session, vchost, cluster_id):
 def main():
     logger.info("Workload Control Plane Network Type is  {} ".format(network_type))
     logger.info("Begin Testing . . . ")
+    
+     # Common tests to be run regardless of Networking choice
+    
     # Check YAML file for missing paramters 
     logger.info("1-Checking Required YAML inputs for program: ")
     for k, v in cfg_yaml.items():
@@ -254,81 +257,80 @@ def main():
     logger.info("2c-Checking Name Resolution for vCenter")
     checkdns(cfg_yaml["VC_HOST"], cfg_yaml["VC_IP"] )
  
-
     logger.info("3-Checking VC is reachable via API using provided credentials")
     # Connect to vCenter and return VAPI content objects
     si, vc_content = vc_connect(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
     
-    # If networking type is vSphere
+    # Check for THE DATACENTER
+    logger.info("4-Checking for the  Datacenter")
+    dc = get_obj(vc_content, [vim.Datacenter], cfg_yaml['VC_DATACENTER'])
+
+    # Check for the CLUSTER
+    logger.info("5-Checking for the Cluster")
+    cluster = get_cluster(dc, cfg_yaml['VC_CLUSTER'])
+    cluster_id = str(cluster).split(':')[1][:-1]
+    logger.debug(cluster_id)
+    
+    # Connect to SPBM Endpoint and existence of Storage Profiles
+    logger.info("6-Checking Existence of Storage Profiles")
+    logger.info("6a-Checking Connecting to SPBM")
+    pbmSi, pbmContent = GetPbmConnection(si._stub)
+    logger.info("6b-Getting Storage Profiles from SPBM")
+    storagepolicies = cfg_yaml['VC_STORAGEPOLICIES']
+    for policy in storagepolicies:
+        storage_profile= get_storageprofile(policy, pbmContent )
+
+    # EXTRA TEST Not Necessary - Check for a Datastore 
+    logger.info("7-Not required - Checking Existence of the Datastores")
+    ds = get_obj(vc_content, [vim.Datastore], cfg_yaml['VC_DATASTORE'])
+
+    # Check for the vds 
+    logger.info("8-Checking for the vds")
+    vds = get_obj(vc_content, [vim.DistributedVirtualSwitch], cfg_yaml['VDS_NAME'])
+
+    # Create VC REST Session
+    logger.info("9-Establishing REST session to VC API")
+    vc_session = connect_vc_rest(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
+
+    ## DEBUG AND TEST BELOW
+    datacenter_object = vc_session.get('https://' + cfg_yaml['VC_HOST'] + '/rest/vcenter/datacenter?filter.names=' + cfg_yaml['VC_DATACENTER'])
+    if len(json.loads(datacenter_object.text)["value"]) == 0:
+        logger.error("ERROR - No datacenter found, please enter valid datacenter name")
+    else:
+        datacenter_id = json.loads(datacenter_object.text)["value"][0].get("datacenter")
+        logger.error("Datacenter ID is {}".format(datacenter_id))
+
+    # Check if Cluster is Compatible with WCP
+    logger.info("10-Checking if cluster {} is WCP Compatible".format(cluster.name))
+    compatability = check_cluster_readiness(vc_session, cfg_yaml['VC_HOST'], cluster_id)
+    
+    ###### If networking type is vSphere  ######
     if network_type=='vsphere':
         try:
             
-            # Check for THE DATACENTER
-            logger.info("4-Checking for the  Datacenter")
-            dc = get_obj(vc_content, [vim.Datacenter], cfg_yaml['VC_DATACENTER'])
-
-            # Check for the CLUSTER
-            logger.info("5-Checking for the Cluster")
-            cluster = get_cluster(dc, cfg_yaml['VC_CLUSTER'])
-            cluster_id = str(cluster).split(':')[1][:-1]
-            logger.debug(cluster_id)
-            
-            # Connect to SPBM Endpoint
-            logger.info("6-Checking Storage Profiles")
-            logger.info("6a-Checking Connecting to SPBM")
-            pbmSi, pbmContent = GetPbmConnection(si._stub)
-            logger.info("6b-Getting Storage Profiles from SPBM")
-            storagepolicies = cfg_yaml['VC_STORAGEPOLICIES']
-            for policy in storagepolicies:
-                storage_profile= get_storageprofile(policy, pbmContent )
-
-            # Check for the Datastore 
-            logger.info("7-Checking for the Datastores")
-            ds = get_obj(vc_content, [vim.Datastore], cfg_yaml['VC_DATASTORE'])
-
-            # Check for the vds 
-            logger.info("8-Checking for the vds")
-            vds = get_obj(vc_content, [vim.DistributedVirtualSwitch], cfg_yaml['VDS_NAME'])
+            logger.info("Begin vSphere Networking checks")
 
             # Check for the Primary Workload Network 
-            logger.info("9-Checking for the Primary Workload Network PortGroup")
+            logger.info("11-Checking for the Primary Workload Network PortGroup")
             prim_wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_PRIMARY_WKLD_PG'])
 
             # Check for the Workload Network 
-            logger.info("10-Checking for the Workload Network PortGroup")
+            logger.info("12-Checking for the Workload Network PortGroup")
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_WKLD_PG'])
             
             # Check for the HAProxy Management IP 
-            logger.info("11-Checking HAProxy Health")
-            logger.info("11a-Checking reachability of HAProxy Frontend IP")
+            logger.info("13-Checking HAProxy Health")
+            logger.info("13a-Checking reachability of HAProxy Frontend IP")
             haproxy_status = check_active(cfg_yaml["HAPROXY_IP"])
 
             if haproxy_status != 1:
                 # Check for the HAProxy Health
-                logger.info("11b-Checking login to HAPROXY DataPlane API")
+                logger.info("13b-Checking login to HAPROXY DataPlane API")
                 check_health_with_auth("get",cfg_yaml["HAPROXY_IP"], str(cfg_yaml["HAPROXY_PORT"]), '/v2/services/haproxy/configuration/backends', 
                 cfg_yaml["HAPROXY_USER"], cfg_yaml["HAPROXY_PW"])
             else:
-                logger.info("11b-Skipping HAPROXY DataPlane API Login until IP is Active")
+                logger.info("13b-Skipping HAPROXY DataPlane API Login until IP is Active")
             
-            # Create VC REST Session
-            logger.info("12-Establishing REST session to VC API")
-            vc_session = connect_vc_rest(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
-
-            ## DEBUG AND TEST BELOW
-            datacenter_object = vc_session.get('https://' + cfg_yaml['VC_HOST'] + '/rest/vcenter/datacenter?filter.names=' + cfg_yaml['VC_DATACENTER'])
-            if len(json.loads(datacenter_object.text)["value"]) == 0:
-                logger.error("ERROR - No datacenter found, please enter valid datacenter name")
-            else:
-                datacenter_id = json.loads(datacenter_object.text)["value"][0].get("datacenter")
-                logger.error("Datacenter ID is {}".format(datacenter_id))
-
-            # Check if Cluster is Compatible with WCP
-            logger.info("13-Checking if cluster {} is WCP Compatible".format(cluster.name))
-            compatability = check_cluster_readiness(vc_session, cfg_yaml['VC_HOST'], cluster_id)
-
-
-
         except vmodl.MethodFault as e:
             logger.error(CRED +"Caught vmodl fault: %s" % e.msg+ CEND)
             pass
@@ -341,42 +343,30 @@ def main():
     if network_type == 'nsxt':
         try:
             
-            # Check for THE DATACENTER
-            print("\n4-Checking for the  Datacenter")
-            dc = get_obj(vc_content, [vim.Datacenter], cfg_yaml['VC_DATACENTER'])
-            #print("\tFound datacenter named {}. Moving onto next check".format(dc.name)+ CEND)
+            logger.info("Begin NSX-T Networking checks")
 
-            # Check for the CLUSTER
-            print("\n5-Checking for the Cluster")
-            cluster = get_cluster(dc, cfg_yaml['VC_CLUSTER'])
 
-            # Check for the Datastore 
-            print("\n6-Checking for the Datastores")
-            ds = get_obj(vc_content, [vim.Datastore], cfg_yaml['VC_DATASTORE'])
-
-            # Check for the vds 
-            print("\n7-Checking for the vds")
-            vds = get_obj(vc_content, [vim.DistributedVirtualSwitch], cfg_yaml['VDS_NAME'])
-
-            # Check for the Management Network 
-            print("\n8-Checking for the Management Network PortGroup")
+            # Check for the Management VDS Port Group
+            logger.info("11-Checking for the Management VDS PortGroup")
             prim_wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_MGMT_PG'])
-            
-            # Check for the Uplink Network 
-            print("\n8-Checking for the Uplink Network PortGroup")
-            prim_wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_UPLINK_PG'])
-            
-            # Check for the Edge TEP Network 
-            print("\n9-Checking for the Edge TEP Network PortGroup")
+
+            # Check for the Uplink VDS PG
+            logger.info("12-Checking for the Uplink VDS PortGroup")
+            wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_UPLINK_PG'])
+
+            # Check for the Edge TEP PG
+            logger.info("12-Checking for the Edge TEP VDS PortGroup")
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_EDGE_TEP_PG'])
 
-            # Check for the Edge TEP Network 
-            
-            # Check for the ? 
-            
-            # Check for the ?
-            
-            # Check for the ?
+            logger.info("2-Checking Network Communication for NSX-T Manager Unified Appliance")
+            # Check if NSX Manager is resolvable and responding
+            logger.info("2a-Checking IP is Active for NSX Manager")
+            nsx_status = check_active(cfg_yaml["NSX_MGR_IP"])
+            logger.info("2c-Checking Name Resolution for vCenter")
+            checkdns(cfg_yaml["NSX_MGR_HOST"], cfg_yaml["NSX_MGR_IP"] )
+
+
+
      
         except vmodl.MethodFault as e:
             print(CRED +"\tCaught vmodl fault: %s" % e.msg+ CEND)
