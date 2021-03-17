@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+# Borrowed NSX-T Rest Functions with permission from nsx-autoconfig Github project https://github.com/papivot/nsx-autoconfig 
+#
+
 import ssl
 import requests
 import sys
@@ -213,7 +217,7 @@ def check_cluster_readiness(vc_session, vchost, cluster_id):
         logger.debug("response text is {}".format(response.text))
         wcp_clusters = json.loads(response.text)
         if len(json.loads(response.text)) == 0:
-            logger.error(CGRN+"ERROR - No clusters returned from WCP Check"+ CEND)
+            logger.error(CRED+"ERROR - No clusters returned from WCP Check"+ CEND)
         else:
             # If we Found clusters that are not compatible with WCP
             logger.debug(type(wcp_clusters))
@@ -231,6 +235,72 @@ def check_cluster_readiness(vc_session, vchost, cluster_id):
                             logger.error(CRED +"+ Reason-{}".format(reason['default_message'])+ CEND)
                     break
             return reasons   
+
+def get_nsx_cluster_status():    
+    try:
+        json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/cluster/status',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    except:
+        return 0
+    else:
+        if not json_response.ok:
+            logger.error(CRED+"Session creation failed, please check NSXMGR connection"+ CEND)
+            logger.debug("Response text is {}".format(json_response.text))
+            return 0
+        else:
+            results = json.loads(json_response.text)
+            if results["detailed_cluster_status"]["overall_status"] == "STABLE":
+                logger.info(CGRN +"SUCCESS - NSX Manager Cluster is Healthy." + CEND)
+                return 1
+            else:
+                logger.error(CRED +"ERROR - NSX Manager Cluster is NOT Healthy." + CEND)
+                return 0
+
+def get_compute_collection_id(cluster):
+    json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/compute-collections',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    if json_response.ok:
+        results = json.loads(json_response.text)
+        for result in results["results"]:
+            if result["display_name"] == cluster:
+                return result["external_id"]
+        return 0
+    else:
+        return 0
+
+def get_edge_clusters():
+    readystate = ["NODE_READY","TRANSPORT_NODE_READY","success"]
+    json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/edge-clusters' ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    if json_response.ok:
+        results = json.loads(json_response.text)
+        state = results["state"]
+        if state not in readystate:
+            return 0
+        else:
+            return 1
+    else:
+        return 0
+
+def get_edge_cluster_state(edgecluster_id):
+    readystate = ["NODE_READY","TRANSPORT_NODE_READY","success"]
+    json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/edge-clusters/'+edgecluster_id+'/state' ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    if json_response.ok:
+        results = json.loads(json_response.text)
+        state = results["state"]
+        if state not in readystate:
+            return 0
+        else:
+            return 1
+    else:
+        return 0
+
+def get_tier0():
+    json_response = nsx_session.get('https://'+nsxmgr+'/policy/api/v1/infra/tier-0s',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    if not json_response.ok:
+        print ("Session creation is failed, please check nsxmgr connection")
+        return 0
+    else:
+        results = json.loads(json_response.text)
+        print (json.dumps(results,indent=2,sort_keys=True))
+        return 1
 
 #################################   MAIN   ################################
 def main():
@@ -345,7 +415,6 @@ def main():
             
             logger.info("Begin NSX-T Networking checks")
 
-
             # Check for the Management VDS Port Group
             logger.info("11-Checking for the Management VDS PortGroup")
             prim_wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_MGMT_PG'])
@@ -358,16 +427,35 @@ def main():
             logger.info("12-Checking for the Edge TEP VDS PortGroup")
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_EDGE_TEP_PG'])
 
-            logger.info("2-Checking Network Communication for NSX-T Manager Unified Appliance")
+            logger.info("13-Checking Network Communication for NSX-T Manager Unified Appliance")
             # Check if NSX Manager is resolvable and responding
-            logger.info("2a-Checking IP is Active for NSX Manager")
+            logger.info("13a-Checking IP is Active for NSX Manager")
             nsx_status = check_active(cfg_yaml["NSX_MGR_IP"])
-            logger.info("2c-Checking Name Resolution for vCenter")
+            logger.info("13b-Checking Name Resolution for vCenter")
             checkdns(cfg_yaml["NSX_MGR_HOST"], cfg_yaml["NSX_MGR_IP"] )
 
+            # Setup NSX Manager Session Information
+            nsx_session=requests.Session()
+            nsx_session.verify=False
+            nsxmgr=cfg_yaml["NSX_MGR_IP"]
+            nsxuser=cfg_yaml["NSX_USER"]
+            nsxpassword=cfg_yaml["NSX_PASSWORD"]
+            
+            logger.info("14-Checking on NSX API, credentials, and Cluster Status")
+            get_nsx_cluster_status()
+
+            logger.info("15-Checking on Current NSX State for vSphere cluster {}".format(cluster_id)))
+            get_compute_collection_id(cluster_id)
+
+            
+            logger.info("16-Checking on NSX Edge Cluster Health")
+            get_edge_clusters()
+            get_edge_cluster_state(edgecluster_id)
+
+            logger.info("16-Checking on existence of NSX T0 Router")
+            get_tier0()
 
 
-     
         except vmodl.MethodFault as e:
             print(CRED +"\tCaught vmodl fault: %s" % e.msg+ CEND)
             pass
