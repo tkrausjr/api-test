@@ -32,6 +32,7 @@ NSX based networking
 - [ ] Validate EDGE VMs are deployed as at least large.
 - [ ] NTP driff between EDGE, vCenter and ESXi
 - [ ] Depending on NSX version, EDGE vTEP and ESX vTEP are on different VLANs
+- [ ] Validate existence of a T0 router.
 - [ ] T0 router can access DNS and NTP
 ---
 VDS based HAProxy config
