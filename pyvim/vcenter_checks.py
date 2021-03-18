@@ -264,11 +264,12 @@ def get_nsx_cluster_status():
 
 def get_nsx_cluster_id(cluster):
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/compute-collections',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+
     if json_response.ok:
+        id = None
         results = json.loads(json_response.text)
         logger.debug("Response text is {}".format(results))
-        if results["result_count"] > 0:
-            object = None
+        if results["result_count"] > 0:   
             logger.info("Found Compute Clusters in NSX." )
             for result in results["results"]:
                 logger.debug("Results display_name is {}".format(result["display_name"] ))
@@ -277,15 +278,14 @@ def get_nsx_cluster_id(cluster):
                     id = result["external_id"]
                     logger.debug("external_id is {}".format(id))
                     logger.info(CGRN +"SUCCESS - Found NSX Compute Cluster {} which matches vSphere HA Cluster.".format( result["display_name"] ) + CEND)
+                    return id
                     break
-
+            if id == None:
+                logger.error(CRED+"ERROR - Compute Cluster {} no present in NSX.".format( result["display_name"] + CEND))
+                
         else:
             logger.error(CRED+"ERROR - No Compute Clusters present in NSX. You need to add vCenter as Compute Manager."+ CEND)
-        return id
-    else:
-        logger.error(CRED+"ERROR - Session creation failed, please check NSXMGR connection"+ CEND)
-        return 0
-
+    
 
 def get_discovered_nodes(cluster_id):
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/discovered-nodes',auth=HTTPBasicAuth(nsxuser,nsxpassword))
@@ -303,7 +303,7 @@ def get_discovered_nodes(cluster_id):
                     print(type(node_props))
                     for node in node_props:
                         print(type(node))
-                        for k, v in node.items(): 
+                        for k, v in node.items():
                             #if k ==
                             print(k)
                             #         
