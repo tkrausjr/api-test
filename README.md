@@ -15,7 +15,7 @@ General
 - [x] Validate that HA is enabled on the specified cluster.
 - [x] Validate that DRS is enabled and set to Fully Automated Mode on the specified cluster.
 - [x] Validate that a compatible NSX-T VDS exists.
-- [ ] At Validate that leaset one content library is created on the vCenter.
+- [ ] Validate that at leaset one content library is created on the vCenter.
 ​
 ---
 NSX based networking
