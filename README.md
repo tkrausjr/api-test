@@ -8,7 +8,7 @@ General
 - [x] Ping/curl various network end points that they are reachable (DNS, NTP, VCenter, NSX Manager, )
 - [x] Validate vSphere API is accessible and provided credentials are valid.
 - [x] Validate existence of vSphere cluster specified in configuration YAML is valid.
-- [x] Validate existence of DVS specified in configuration YAML is valid.
+- [x] Validate existence of VDS specified in configuration YAML is valid.
 - [x] Validate existence of Datacenter specified in configuration YAML is valid.
 - [x] Validate existence of Cluster specified in configuration YAML is valid.
 - [x] Validate that vLCM (Personality Manager) is not enabled on the specified cluster if vSphere <= 7.0 U1.
