@@ -1,16 +1,36 @@
 # WCP-precheck
+WCP-Precheck projects aims to make POC's less painful for customers and overall more successful by providing a simple validation and report style output that can be run by VMware Tanzu SE's or Customers to quickly validate a vSphere environment is ready for a successful vSphere with Tanzu Supervisor Cluster creation.  The project has options for testing both NSX-T based and vSphere based networking for vSphere with Tanzu.
 
-## script functionality
-Python script to validate that various dependencies are in place for a successful WCP installation, including:
+## Test Coverage
+General
+- [ ] Atlease one Tag-based storage policy exists the vCenter.
+- [ ] DNS forward and reverse resolution should work for most end-points.
+- [ ] Ping/curl various network end points that they are reachable (DNS, NTP, VCenter, NSX Manager, )
+- [ ] Atleaset one content library is created on the vCenter.
+​
+---
+NSX based networking
+- [ ] Ingress and Egress network is routed
+- [ ] Heartbeat ping to the uplink IP (T0 interface) is working. 
+- [ ] 1600 byte ping with no fragmentation between ESXi TEPs
+- [ ] 1600 byte ping with no fragmentation between ESXi TEPs to Edge TEPs.   
+- [ ] Validate EDGE VMs are deployed as at least large.
+- [ ] NTP driff between EDGE, vCenter and ESXi
+- [ ] Depending on NSX version, EDGE vTEP and ESX vTEP are on different VLANs
+- [ ] T0 router can access DNS and NTP
+---
+VDS based HAProxy config
+- [ ] HA proxy liveness probes that check each network connectivity and the frontend VIP IP's
+- [ ] The HA Proxy Load-Balancer IP Range and WCP Workload Network Range must not include the Gateway address for the overall Workload Network.
+- [ ] The HA Proxy Workload IP should be in the overall Workload network, but outside of the Load-Balancer IP Range and the WCP Workload Network Range.
+- [ ] The IP ranges for the OVA and the WCP enablement should be checked to be the same
+- [ ] The WCP Range for Virtual Servers must be exactly the range defined by the Load-Balancer IP Range in HA Proxy.  
+- [ ] Validate successful login access to HAProxy VM's API endpoint.
 
-1. Check that script parameters are filled in $HOME/test_params.yaml 
-2. Check Name Resolution and IP connectivty for vCenter
-3. Check existence of target Datacenter, Cluster, Datastore
-4. Check existence of DVS and Port Groups
-5. Check existence of Storage Policy
-6. Check Cluster compatability with Workload Management (WCP)
-7. For vSphere Networking, Check existence & API of HAProxy
-7. For NSX-T Networking
+
+
+
+
 
 ### Preparation steps before you test the environment.
 On Ubuntu 18.04 with Python3 already installed.
