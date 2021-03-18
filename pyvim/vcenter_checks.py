@@ -5,6 +5,7 @@
 
 import ssl
 import requests
+from requests.auth import HTTPBasicAuth 
 import sys
 import json
 import os
@@ -26,10 +27,17 @@ CRED = '\033[91m'
 CEND = '\033[0m'
 CGRN = '\033[92m'
 
+parser = argparse.ArgumentParser(description='vcenter_checks.py validates environments for succcesful Supervisor Clusters setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify environment information to test. Find additional information at: gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git')
+parser.add_argument('--version', action='version',version='%(prog)s v0.02')
+parser.add_argument('-n','--networking',choices=['nsxt','vsphere'], help='Networking Environment(nsxt, vsphere)', default='vsphere')
+parser.add_argument('-v', '--verbosity', nargs="?", choices=['INFO','DEBUG'], default="INFO")
+network_type=parser.parse_args().networking
+verbosity = parser.parse_args().verbosity
+
 # Setup logging parser
 logger=logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(levelname)s: %(asctime)s: %(name)s: %(message)s', "%Y-%m-%d %H:%M:%S")
+formatter = logging.Formatter('%(levelname)s: %(asctime)s: %(name)s: %(lineno)d: %(message)s', "%Y-%m-%d %H:%M:%S")
 
 file_handler = logging.FileHandler('wcp_precheck_results.log')
 file_handler.setLevel(logging.INFO)
@@ -39,14 +47,12 @@ stream_handler=logging.StreamHandler()
 stream_handler.setFormatter(formatter)
 stream_handler.setLevel(logging.INFO)
 
+if verbosity == 'DEBUG':
+    file_handler.setLevel(logging.DEBUG)
+    stream_handler.setLevel(logging.DEBUG)
+
 logger.addHandler(file_handler)
 logger.addHandler(stream_handler)
-
-
-parser = argparse.ArgumentParser(description='vcenter_checks.py validates environments for succcesful Supervisor Clusters setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify environment information to test. Find additional information at: gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git')
-parser.add_argument('--version', action='version',version='%(prog)s v0.02')
-parser.add_argument('-n','--networking',choices=['nsxt','vsphere'], help='Networking Environment(nsxt, vsphere)', default='vsphere')
-network_type=parser.parse_args().networking
 
 currentDirectory = os.getcwd()
 host_os = platform.system()
@@ -143,7 +149,6 @@ def GetPbmConnection(vpxdStub):
     VmomiSupport.GetRequestContext()["vcSessionCookie"] = sessionCookie
     hostname = vpxdStub.host.split(":")[0]
 
-    
     context = ssl._create_unverified_context()
     pbmStub = pyVmomi.SoapStubAdapter(
         host=hostname,
@@ -239,12 +244,13 @@ def check_cluster_readiness(vc_session, vchost, cluster_id):
 def get_nsx_cluster_status():    
     try:
         json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/cluster/status',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+        logger.debug("json response is {}".format(json_response.status_code) )
+        logger.debug("Response text is {}".format(json_response.text))
     except:
         return 0
     else:
         if not json_response.ok:
             logger.error(CRED+"Session creation failed, please check NSXMGR connection"+ CEND)
-            logger.debug("Response text is {}".format(json_response.text))
             return 0
         else:
             results = json.loads(json_response.text)
@@ -255,27 +261,87 @@ def get_nsx_cluster_status():
                 logger.error(CRED +"ERROR - NSX Manager Cluster is NOT Healthy." + CEND)
                 return 0
 
-def get_compute_collection_id(cluster):
+
+def get_nsx_cluster_id(cluster):
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/compute-collections',auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if json_response.ok:
         results = json.loads(json_response.text)
-        for result in results["results"]:
-            if result["display_name"] == cluster:
-                return result["external_id"]
-        return 0
+        logger.debug("Response text is {}".format(results))
+        if results["result_count"] > 0:
+            object = None
+            logger.info("Found Compute Clusters in NSX." )
+            for result in results["results"]:
+                logger.debug("Results display_name is {}".format(result["display_name"] ))
+                if result["display_name"] == cluster:
+                    logger.debug("cluster result is {}".format(result))
+                    id = result["external_id"]
+                    logger.debug("external_id is {}".format(id))
+                    logger.info(CGRN +"SUCCESS - Found NSX Compute Cluster {} which matches vSphere HA Cluster.".format( result["display_name"] ) + CEND)
+                    break
+
+        else:
+            logger.error(CRED+"ERROR - No Compute Clusters present in NSX. You need to add vCenter as Compute Manager."+ CEND)
+        return id
     else:
+        logger.error(CRED+"ERROR - Session creation failed, please check NSXMGR connection"+ CEND)
         return 0
 
+
+def get_discovered_nodes(cluster_id):
+    json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/discovered-nodes',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    if json_response.ok:
+        results = json.loads(json_response.text)
+        logger.debug("Discovered-Nodes Response text is {}".format(results))
+        if results["result_count"] > 0:
+            object = None
+            logger.info("Found Nodes in NSX." )
+            nodes_in_cluster = []
+            for result in results["results"]:
+                if result["parent_compute_collection"] == cluster_id:
+                    logger.debug("Node {} is in Cluster {}".format(result["external_id"], cluster_id))
+                    node_props = result["origin_properties"]
+                    print(type(node_props))
+                    for node in node_props:
+                        print(type(node))
+                        print(node)
+                    logger.debug("external_id is {}".format(id))
+            logger.debug("The following nodes were found in the cluster {}".format(nodes_in_cluster))
+            return nodes_in_cluster
+        else:
+            logger.error(CRED+"ERROR - No Compute Clusters present in NSX. You need to add vCenter as Compute Manager."+ CEND)
+        return id
+    else:
+        logger.error(CRED+"ERROR - Session creation failed, please check NSXMGR connection"+ CEND)
+        return 0
+
+
+
+def get_node_status(nodeids):
+    # https://vdc-download.vmware.com/vmwb-repository/dcr-public/787988e9-6348-4b2a-8617-e6d672c690ee/a187360c-77d5-4c0c-92a8-8e07aa161a27/api_includes/system_administration_configuration_fabric_nodes_fabric_nodes.html
+    for nodeid in nodeids:
+        json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/nodes/'+nodeid+'/status',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+        if json_response.ok:
+            results = json.loads(json_response.text)
+            logger.debug("Response text is {}".format(results))
+        else:
+            logger.error(CRED+"ERROR - Session creation failed, please check NSXMGR connection"+ CEND)
+            return 0
+
 def get_edge_clusters():
-    readystate = ["NODE_READY","TRANSPORT_NODE_READY","success"]
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/edge-clusters' ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if json_response.ok:
         results = json.loads(json_response.text)
-        state = results["state"]
-        if state not in readystate:
+        logger.debug("Response text is {}".format(results))
+        if results["result_count"] == 0:
+            logger.error(CRED+"ERROR - No Edge Clusters present in NSX. An Edge Cluster is Required for WCP."+ CEND)
             return 0
         else:
-            return 1
+            logger.info(CGRN +"Assuming there is only ONE Edge Cluster for the POC" + CEND)
+            #for result in results["results"]:
+            cluster_id = results["results"][0]["id"]
+            logger.info(CGRN +"SUCCESS - Found Edge Cluster with ID {}.".format(cluster_id) + CEND)
+            return cluster_id
+
     else:
         return 0
 
@@ -293,7 +359,7 @@ def get_edge_cluster_state(edgecluster_id):
         return 0
 
 def get_tier0():
-    json_response = nsx_session.get('https://'+nsxmgr+'/policy/api/v1/infra/tier-0s',auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    json_response = nsx_session.get('https://'+nsxmgr+'/policy/api/v1/infra/tier-0s', auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if not json_response.ok:
         print ("Session creation is failed, please check nsxmgr connection")
         return 0
@@ -326,7 +392,7 @@ def main():
         check_active(dns_svr)
     logger.info("2c-Checking Name Resolution for vCenter")
     checkdns(cfg_yaml["VC_HOST"], cfg_yaml["VC_IP"] )
- 
+    
     logger.info("3-Checking VC is reachable via API using provided credentials")
     # Connect to vCenter and return VAPI content objects
     si, vc_content = vc_connect(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
@@ -431,10 +497,11 @@ def main():
             # Check if NSX Manager is resolvable and responding
             logger.info("13a-Checking IP is Active for NSX Manager")
             nsx_status = check_active(cfg_yaml["NSX_MGR_IP"])
-            logger.info("13b-Checking Name Resolution for vCenter")
+            logger.info("13b-Checking Name Resolution for NSX Manager")
             checkdns(cfg_yaml["NSX_MGR_HOST"], cfg_yaml["NSX_MGR_IP"] )
 
             # Setup NSX Manager Session Information
+            global nsx_session, nsxmgr, nsxuser,nsxpassword
             nsx_session=requests.Session()
             nsx_session.verify=False
             nsxmgr=cfg_yaml["NSX_MGR_IP"]
@@ -444,15 +511,22 @@ def main():
             logger.info("14-Checking on NSX API, credentials, and Cluster Status")
             get_nsx_cluster_status()
 
-            logger.info("15-Checking on Current NSX State for vSphere cluster {}".format(cluster_id)))
-            get_compute_collection_id(cluster_id)
+            logger.info("15-Checking on Current NSX State for vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
+            nsx_cluster_id = get_nsx_cluster_id(cfg_yaml['VC_CLUSTER'])
+            logger.debug("nsx_cluster_id Outside of the Function is {}".format(nsx_cluster_id))
 
-            
-            logger.info("16-Checking on NSX Edge Cluster Health")
+            logger.info("16-Getting all NSX Nodes for vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
+            nsx_nodes = get_discovered_nodes(nsx_cluster_id)
+
+            logger.info("17-Checking on State for all nodes in {}".format(cfg_yaml['VC_CLUSTER']))
+            get_node_status(nsx_nodes)
+
+
+            logger.info("18-Checking on NSX Edge Cluster Health")
             get_edge_clusters()
             get_edge_cluster_state(edgecluster_id)
 
-            logger.info("16-Checking on existence of NSX T0 Router")
+            logger.info("19-Checking on existence of NSX T0 Router")
             get_tier0()
 
 
