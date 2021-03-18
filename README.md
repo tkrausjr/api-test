@@ -2,7 +2,7 @@
 WCP-Precheck projects aims to make POC's less painful for customers and overall more successful by providing a simple validation and report style output that can be run by VMware Tanzu SE's or Customers to quickly validate a vSphere environment is ready for a successful vSphere with Tanzu Supervisor Cluster creation.  The project has options for testing both NSX-T based and vSphere based networking for vSphere with Tanzu.
 
 ## Test Coverage
-####General
+### General
 - [x] The Tag-based storage policy specified exists the vCenter.
 - [x] DNS forward and reverse resolution should work for vCenter and NSX Manager.
 - [x] Ping/curl various network end points that they are reachable (DNS, NTP, VCenter, NSX Manager, )
@@ -18,7 +18,7 @@ WCP-Precheck projects aims to make POC's less painful for customers and overall 
 - [ ] Validate that at leaset one content library is created on the vCenter.
 ​
 ---
-####NSX based networking
+### NSX based networking
 - [x] Validate required VDS Port Groups(Management, Edge TEP, Uplink) specified in configuration YAML is valid.
 - [x] DNS forward and reverse resolution should work for NSX Manager.
 - [x] Validate we can communicate with NSX Manager on network and NSX Management Node and Cluster is Healthy.
@@ -35,7 +35,7 @@ WCP-Precheck projects aims to make POC's less painful for customers and overall 
 - [ ] Validate existence of a T0 router.
 - [ ] T0 router can access DNS and NTP
 ---
-####VDS based HAProxy config
+### VDS based HAProxy config
 - [x] HA proxy liveness probes that check each network connectivity and the frontend VIP IP's
 - [ ] The HA Proxy Load-Balancer IP Range and WCP Workload Network Range must not include the Gateway address for the overall Workload Network.
 - [ ] The HA Proxy Workload IP should be in the overall Workload network, but outside of the Load-Balancer IP Range and the WCP Workload Network Range.
