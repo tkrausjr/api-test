@@ -94,11 +94,11 @@ def checkdns(hostname, ip):
 def check_active(host):
     if os.system("ping -c 3 " + host.strip(";") + ">/dev/null 2>&1" ) == 0:
         logger.info(CGRN +"SUCCESS - Can ping {}. ".format(host) + CEND)
-        return 0
+        #return 0
     
     else:
         logger.error(CRED +"ERROR - Cant ping {}. ".format(host) + CEND)
-        return 1
+        #return 1
 
 def vc_connect(vchost, vcuser, vcpass):
     si = None
@@ -303,8 +303,10 @@ def get_discovered_nodes(cluster_id):
                     print(type(node_props))
                     for node in node_props:
                         print(type(node))
-                        print(node)
-                    logger.debug("external_id is {}".format(id))
+                        for k, v in node.items(): 
+                            #if k ==
+                            print(k)
+                            #         
             logger.debug("The following nodes were found in the cluster {}".format(nodes_in_cluster))
             return nodes_in_cluster
         else:
