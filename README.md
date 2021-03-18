@@ -1,5 +1,5 @@
 # WCP-precheck
-WCP-Precheck projects aims to make POC's less painful for customers and overall more successful by providing a simple validation and report style output that can be run by VMware Tanzu SE's or Customers to quickly validate a vSphere environment is ready for a successful vSphere with Tanzu Supervisor Cluster creation.  The project has options for testing both NSX-T based and vSphere based networking for vSphere with Tanzu.
+WCP-Precheck projects aims to make POC's less painful for customers and overall more successful by providing a simple validation and both realtime (Stdout) and report style output that can be run by VMware Tanzu SE's or Customers to quickly validate a vSphere environment is ready for a successful vSphere with Tanzu Supervisor Cluster creation.  The project has options for testing both NSX-T based and vSphere based networking for vSphere with Tanzu.
 
 ## Test Coverage
 ### General
