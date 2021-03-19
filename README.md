@@ -124,7 +124,7 @@ To run the validation script
 ``` bash
 
 ❯ cd github/wcp-precheck/pyvim
-./wcp_tests.py -h                              
+❯ ./wcp_tests.py -h                              
 usage: wcp_tests.py [-h] [--version] [-n {nsxt,vsphere}] [-v [{INFO,DEBUG}]]
 
 vcenter_checks.py validates environments for succcesful Supervisor Clusters
@@ -134,7 +134,7 @@ gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git
 
 optional arguments:
   -h, --help            show this help message and exit
-  --version             show program's version number and exit
+  --version             show programs version number and exit
   -n {nsxt,vsphere}, --networking {nsxt,vsphere}
                         Networking Environment(nsxt, vsphere)
   -v [{INFO,DEBUG}], --verbosity [{INFO,DEBUG}]
