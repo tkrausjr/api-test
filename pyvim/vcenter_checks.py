@@ -303,18 +303,33 @@ def get_discovered_nodes(cluster_id):
                     node_props = result["origin_properties"]
                     for node in node_props:
                         if node['key']== "dasHostState":
-                                logger.info("NSX Install State for {} is ={}.".format(result["display_name"], node['value']))
+                                if "Master" in node['value']:
+                                    logger.info(CGRN +"SUCCESS - NSX Installed on {}".format( result["display_name"] ) + CEND)
+                                else:
+                                    logger.error(CRED +"ERROR - NSX not initialized successfully on {}".format( result["display_name"] ) + CEND)
+                                logger.debug("NSX Install State for {} is ={}.".format(result["display_name"], node['value']))
                         if node['key']== "powerState":
-                                logger.info("Power State for {} is ={}.".format(result["display_name"], node['value']))
+                                if "poweredOn" in node['value']:
+                                    logger.info(CGRN +"SUCCESS - Node {} is powered on".format( result["display_name"] ) + CEND)
+                                else:
+                                    logger.error(CRED +"ERROR - Node {} is NOT Powered on".format( result["display_name"] ) + CEND)
+                                logger.debug("Power State for {} is ={}.".format(result["display_name"], node['value']))
                         if node['key']== "connectionState":
-                                logger.info("Connection State for {} is ={}.".format(result["display_name"], node['value']))
+                                if "connected" in node['value']:
+                                    logger.info(CGRN +"SUCCESS - Node {} is connected to NSX Manager".format( result["display_name"] ) + CEND)
+                                else:
+                                    logger.error(CRED +"ERROR - Node {} is NOT connected to NSX Manager".format( result["display_name"] ) + CEND)
+                                logger.debug("Connection State for {} is ={}.".format(result["display_name"], node['value']))
                         if node['key']== "inMaintenanceMode":
-                                logger.info("Maint Mode for {} status is ={}.".format(result["display_name"], node['value']))
+                                if "false" in node['value']:
+                                    logger.info(CGRN +"SUCCESS - Node {} is NOT in Maintenance Mode".format( result["display_name"] ) + CEND)
+                                else:
+                                    logger.error(CRED +"ERROR - Node {} is in Maintenance Mode".format( result["display_name"] ) + CEND)
+                                logger.debug("Maint Mode for {} status is ={}.".format(result["display_name"], node['value']))
     
            
                             
-                
-
+    
             logger.debug("The following nodes were found in the cluster {}".format(nodes_in_cluster))
             return nodes_in_cluster
         else:
@@ -323,44 +338,6 @@ def get_discovered_nodes(cluster_id):
     else:
         logger.error(CRED+"ERROR - Session creation failed, please check NSXMGR connection"+ CEND)
         return 0
-
-
-
-'''
-# NOT WORKING
-def get_discovered_nodes(cluster_id):
-    json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/discovered-nodes',auth=HTTPBasicAuth(nsxuser,nsxpassword))
-    if json_response.ok:
-        results = json.loads(json_response.text)
-        logger.debug("Discovered-Nodes Response text is {}".format(results))
-        if results["result_count"] > 0:
-            cluster = None
-            logger.info("Found Nodes in NSX." )
-            nodes_in_cluster = []
-            for result in results["results"]:
-                if result["parent_compute_collection"] == cluster_id:
-                    cluster = cluster_id
-                    logger.info("Found Node {} in Cluster {}".format(result["external_id"], cluster_id))
-                    node_props = result["origin_properties"]
-                    print(type(node_props))
-                    for node in node_props:
-                        print(type(node))
-                        for k, v in node.items():
-                            #if k ==
-                            print(k)
-                            #
-                
-            if cluster == None:
-                logger.error(CRED+"ERROR - Could not find Compute Cluster {} in NSX.".format( result["display_name"] + CEND))
-            return 0
-
-        else:
-            logger.error(CRED+"ERROR - No Compute Clusters present in NSX. You need to add vCenter as Compute Manager."+ CEND)
-        return id
-    else:
-        logger.error(CRED+"ERROR - Session creation failed, please check NSXMGR connection"+ CEND)
-        return 0
-'''
 
 
 
