@@ -293,12 +293,13 @@ def get_discovered_nodes(cluster_id):
         results = json.loads(json_response.text)
         logger.debug("Discovered-Nodes Response text is {}".format(results))
         if results["result_count"] > 0:
-            object = None
+            cluster = None
             logger.info("Found Nodes in NSX." )
             nodes_in_cluster = []
             for result in results["results"]:
                 if result["parent_compute_collection"] == cluster_id:
-                    logger.debug("Node {} is in Cluster {}".format(result["external_id"], cluster_id))
+                    cluster = cluster_id
+                    logger.info("Found Node {} in Cluster {}".format(result["external_id"], cluster_id))
                     node_props = result["origin_properties"]
                     print(type(node_props))
                     for node in node_props:
@@ -306,9 +307,13 @@ def get_discovered_nodes(cluster_id):
                         for k, v in node.items():
                             #if k ==
                             print(k)
-                            #         
+                            #
+                break         
             logger.debug("The following nodes were found in the cluster {}".format(nodes_in_cluster))
-            return nodes_in_cluster
+            if cluster == None:
+                logger.error(CRED+"ERROR - Could not find Compute Cluster {} in NSX.".format( result["display_name"] + CEND))
+            return 0
+
         else:
             logger.error(CRED+"ERROR - No Compute Clusters present in NSX. You need to add vCenter as Compute Manager."+ CEND)
         return id
@@ -520,8 +525,7 @@ def main():
             logger.info("16-Getting all NSX Nodes for vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
             nsx_nodes = get_discovered_nodes(nsx_cluster_id)
 
-            logger.info("17-Checking on State for all nodes in {}".format(cfg_yaml['VC_CLUSTER']))
-            get_node_status(nsx_nodes)
+
 
 
             logger.info("18-Checking on NSX Edge Cluster Health")
