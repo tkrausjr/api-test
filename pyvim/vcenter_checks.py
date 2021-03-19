@@ -299,13 +299,22 @@ def get_discovered_nodes(cluster_id):
             nodes_in_cluster = []
             for result in results["results"]:
                 if result["parent_compute_collection"] == cluster_id:
-                    logger.debug("Node {} is in Cluster {}".format(result["external_id"], cluster_id))
+                    logger.info("Found Node {} with Display Name {} in Cluster {}".format(result["external_id"], result["display_name"], cluster_id))
                     node_props = result["origin_properties"]
-                    print(type(node_props))
                     for node in node_props:
-                        print(type(node))
-                        print(node)
-                    logger.debug("external_id is {}".format(id))
+                        if node['key']== "dasHostState":
+                                logger.info("NSX Install State for {} is ={}.".format(result["display_name"], node['value']))
+                        if node['key']== "powerState":
+                                logger.info("Power State for {} is ={}.".format(result["display_name"], node['value']))
+                        if node['key']== "connectionState":
+                                logger.info("Connection State for {} is ={}.".format(result["display_name"], node['value']))
+                        if node['key']== "inMaintenanceMode":
+                                logger.info("Maint Mode for {} status is ={}.".format(result["display_name"], node['value']))
+    
+           
+                            
+                
+
             logger.debug("The following nodes were found in the cluster {}".format(nodes_in_cluster))
             return nodes_in_cluster
         else:
