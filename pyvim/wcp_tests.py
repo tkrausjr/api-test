@@ -385,7 +385,7 @@ def get_tier0():
         else:
             logger.info(CGRN +"SUCCESS - Found T0 Routers" + CEND)
             for result in results["results"]:
-                logger.info(CRED +"T0 router found is {} ".format(result['display_name']) + CEND)
+                logger.info(CGRN +"T0 router found. Name is {} ".format(result['display_name']) + CEND)
             return 1
 
 
