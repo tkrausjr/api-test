@@ -24,7 +24,7 @@ WCP-Precheck projects aims to make POC's less painful for customers and overall 
 - [x] Validate we can communicate with NSX Manager on network and NSX Management Node and Cluster is Healthy.
 - [x] Validate NSX-T API is accessible and provided credentials are valid.
 - [x] Validate Health of ESXi Transport Nodes(NSX-T Agent Install and Status) in vSphere Cluster.
-- [ ] Validate Health of Edge Transport Nodes(Status) in vSphere Cluster.
+- [x] Validate Health of Edge Transport Nodes(Status) in vSphere Cluster.
 - [ ] Ingress and Egress network is routed
 - [ ] Heartbeat ping to the uplink IP (T0 interface) is working. 
 - [ ] 1600 byte ping with no fragmentation between ESXi TEPs
@@ -56,7 +56,7 @@ Cloning into 'wcp-precheck'...
 Username for 'https://gitlab.eng.vmware.com':   <VMware User ID IE njones>
 Password for 'https://kraust@gitlab.eng.vmware.com':  <VMware Password>
 cd wcp-precheck/pyvim
-chmod +x ./vcenter_checks.py 
+chmod +x ./wcp_tests.py 
 cp ./test_params.yaml ~/test_params.yaml
 vi ~/test_params.yaml    ### See Below of explanation
 pip install pyvmomi
@@ -75,7 +75,7 @@ DNS_SERVERS:
 VC_HOST: 'vcsa.tpmlab.vmware.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
 VC_IP: '10.173.13.81'                      # VCSA IP
 VC_SSO_USER: 'administrator@vsphere.local'
-VC_SSO_PWD: *******
+VC_SSO_PWD:  '***********'
 VC_DATACENTER: 'Datacenter'
 VC_CLUSTER:  'Nested-TKG-Cluster'
 VC_STORAGEPOLICIES:          # Storage Policies to use 
@@ -92,6 +92,8 @@ HAPROXY_IP: '192.168.100.163'
 HAPROXY_PORT: 5556      # HAProxy Dataplane API Mgmt Port chosen during OVA Deployment
 HAPROXY_IP_RANGE_START: '10.173.13.38' # HAProxy LB IP Range chosen during OVA Deployment
 HAPROXY_IP_RANGE_SIZE: 29
+HAPROXY_USER: 'admin'
+HAPROXY_PW: '***********'
 
 ### Section for NSX-T Networking Deployments
 VDS_NAME: 'vds-1'
@@ -99,6 +101,10 @@ VDS_MGMT_PG: 'management-vm'
 VDS_UPLINK_PG: 'ext-uplink-edge'
 VDS_EDGE_TEP_PG: 'tep-edge'
 HOST_TEP_VLAN: 102
+NSX_MGR_HOST: 'nsxmgr.tpmlab.vmware.com'   # FQDN of NSX-T Manager Appliance
+NSX_MGR_IP: '10.173.13.82'    # IP Addr of NSX-T Manager Appliance
+NSX_USER: 'admin'   # API Username for NSX-T Manager Appliance
+NSX_PASSWORD: '***********'    # API Password for NSX-T Manager Appliance
 
 ### Section for WCP Supervisor Cluster Deployment
 WCP_MGMT_STARTINGIP:
@@ -111,16 +117,31 @@ ESX_IPS:
   - '10.173.13.168'
   - '10.173.13.169'
 ESX_USR: 'root'               #  ESX host username
-ESX_PWD: '********'           #  ESX host password
+ESX_PWD: '***********'           #  ESX host password
 ``` 
 ### Validating the environment.
 To run the validation script
 ``` bash
 
 ❯ cd github/wcp-precheck/pyvim
+./wcp_tests.py -h                              
+usage: wcp_tests.py [-h] [--version] [-n {nsxt,vsphere}] [-v [{INFO,DEBUG}]]
 
-❯ vcenter_checks.py -n vsphere
+vcenter_checks.py validates environments for succcesful Supervisor Clusters
+setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify
+environment information to test. Find additional information at:
+gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git
 
+optional arguments:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  -n {nsxt,vsphere}, --networking {nsxt,vsphere}
+                        Networking Environment(nsxt, vsphere)
+  -v [{INFO,DEBUG}], --verbosity [{INFO,DEBUG}]
+
+❯ wcp_tests.py -n nsxt 
+OR
+❯ wcp_tests.py -n vsphere
 ❯ /usr/local/bin/python3 /Users/kraust.com/github/wcp-precheck/pyvim/vcenter_checks.py
 INFO: 2021-03-15 13:37:46: __main__: Looking in /Users/kraust.com for test_params.yaml file
 INFO: 2021-03-15 13:37:46: __main__: Host Operating System is Darwin.
