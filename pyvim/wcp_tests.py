@@ -288,47 +288,45 @@ def get_nsx_cluster_id(cluster):
     
 
 
-def get_discovered_nodes(cluster_id):
+def get_node_states(cluster_id):
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/discovered-nodes',auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if json_response.ok:
         results = json.loads(json_response.text)
         logger.debug("Discovered-Nodes Response text is {}".format(results))
         if results["result_count"] > 0:
             object = None
-            logger.info("Found Nodes in NSX." )
+            logger.debug("Found Nodes in NSX." )
             nodes_in_cluster = []
             for result in results["results"]:
                 if result["parent_compute_collection"] == cluster_id:
-                    logger.info("Found Node {} with Display Name {} in Cluster {}".format(result["external_id"], result["display_name"], cluster_id))
+                    logger.info("Checking ESX Node with Display Name {} and UUID {} in Cluster {}".format(result["display_name"], result["external_id"], cluster_id))
+                    nodes_in_cluster.append(result["external_id"])
                     node_props = result["origin_properties"]
                     for node in node_props:
                         if node['key']== "dasHostState":
                                 if "Master" in node['value']:
-                                    logger.info(CGRN +"SUCCESS - NSX Installed on {}".format( result["display_name"] ) + CEND)
+                                    logger.info(CGRN +"SUCCESS - NSX Installed on ESX Node {}".format( result["display_name"] ) + CEND)
                                 else:
-                                    logger.error(CRED +"ERROR - NSX not initialized successfully on {}".format( result["display_name"] ) + CEND)
-                                logger.debug("NSX Install State for {} is ={}.".format(result["display_name"], node['value']))
+                                    logger.error(CRED +"ERROR - NSX not initialized successfully on ESX Node {}".format( result["display_name"] ) + CEND)
+                                logger.debug("NSX Install State for ESX Node {} is ={}.".format(result["display_name"], node['value']))
                         if node['key']== "powerState":
                                 if "poweredOn" in node['value']:
-                                    logger.info(CGRN +"SUCCESS - Node {} is powered on".format( result["display_name"] ) + CEND)
+                                    logger.info(CGRN +"SUCCESS - ESX Node {} is powered on".format( result["display_name"] ) + CEND)
                                 else:
-                                    logger.error(CRED +"ERROR - Node {} is NOT Powered on".format( result["display_name"] ) + CEND)
-                                logger.debug("Power State for {} is ={}.".format(result["display_name"], node['value']))
+                                    logger.error(CRED +"ERROR - ESX Node {} is NOT Powered on".format( result["display_name"] ) + CEND)
+                                logger.debug("Power State for ESX Node {} is ={}.".format(result["display_name"], node['value']))
                         if node['key']== "connectionState":
                                 if "connected" in node['value']:
-                                    logger.info(CGRN +"SUCCESS - Node {} is connected to NSX Manager".format( result["display_name"] ) + CEND)
+                                    logger.info(CGRN +"SUCCESS - ESX Node {} is connected to NSX Manager".format( result["display_name"] ) + CEND)
                                 else:
-                                    logger.error(CRED +"ERROR - Node {} is NOT connected to NSX Manager".format( result["display_name"] ) + CEND)
-                                logger.debug("Connection State for {} is ={}.".format(result["display_name"], node['value']))
+                                    logger.error(CRED +"ERROR - ESX Node {} is NOT connected to NSX Manager".format( result["display_name"] ) + CEND)
+                                logger.debug("Connection State for ESX Node {} is ={}.".format(result["display_name"], node['value']))
                         if node['key']== "inMaintenanceMode":
                                 if "false" in node['value']:
-                                    logger.info(CGRN +"SUCCESS - Node {} is NOT in Maintenance Mode".format( result["display_name"] ) + CEND)
+                                    logger.info(CGRN +"SUCCESS - ESX Node {} is NOT in Maintenance Mode".format( result["display_name"] ) + CEND)
                                 else:
-                                    logger.error(CRED +"ERROR - Node {} is in Maintenance Mode".format( result["display_name"] ) + CEND)
-                                logger.debug("Maint Mode for {} status is ={}.".format(result["display_name"], node['value']))
-    
-           
-                            
+                                    logger.error(CRED +"ERROR - ESX Node {} is in Maintenance Mode".format( result["display_name"] ) + CEND)
+                                logger.debug("Maint Mode for ESX Node {} status is ={}.".format(result["display_name"], node['value']))
     
             logger.debug("The following nodes were found in the cluster {}".format(nodes_in_cluster))
             return nodes_in_cluster
@@ -340,20 +338,6 @@ def get_discovered_nodes(cluster_id):
         return 0
 
 
-
-
-
-def get_node_status(nodeids):
-    # https://vdc-download.vmware.com/vmwb-repository/dcr-public/787988e9-6348-4b2a-8617-e6d672c690ee/a187360c-77d5-4c0c-92a8-8e07aa161a27/api_includes/system_administration_configuration_fabric_nodes_fabric_nodes.html
-    for nodeid in nodeids:
-        json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/fabric/nodes/'+nodeid+'/status',auth=HTTPBasicAuth(nsxuser,nsxpassword))
-        if json_response.ok:
-            results = json.loads(json_response.text)
-            logger.debug("Response text is {}".format(results))
-        else:
-            logger.error(CRED+"ERROR - Session creation failed, please check NSXMGR connection"+ CEND)
-            return 0
-
 def get_edge_clusters():
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/edge-clusters' ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if json_response.ok:
@@ -361,7 +345,7 @@ def get_edge_clusters():
         logger.debug("Response text is {}".format(results))
         if results["result_count"] == 0:
             logger.error(CRED+"ERROR - No Edge Clusters present in NSX. An Edge Cluster is Required for WCP."+ CEND)
-            return 0
+            return None
         else:
             logger.info(CGRN +"Assuming there is only ONE Edge Cluster for the POC" + CEND)
             #for result in results["results"]:
@@ -379,8 +363,10 @@ def get_edge_cluster_state(edgecluster_id):
         results = json.loads(json_response.text)
         state = results["state"]
         if state not in readystate:
+            logger.info(CRED +"ERROR - Edge Cluster {} found but not Ready.".format(cluster_id) + CEND)
             return 0
         else:
+            logger.info(CGRN +"SUCCESS - Edge Cluster {} is Ready.".format(cluster_id) + CEND)
             return 1
     else:
         return 0
@@ -392,8 +378,16 @@ def get_tier0():
         return 0
     else:
         results = json.loads(json_response.text)
-        print (json.dumps(results,indent=2,sort_keys=True))
-        return 1
+        if results["result_count"] == 0:
+            logger.info(CRED +"ERROR - No T0 routers found. Create a T0 router per documentation" + CEND)
+            logger.debug (json.dumps(results,indent=2,sort_keys=True))
+            return 0
+        else:
+            logger.info(CGRN +"SUCCESS - Found T0 Routers" + CEND)
+            for result in results["results"]:
+                logger.info(CRED +"T0 router found is {} ".format(result) + CEND)
+            return 1
+
 
 #################################   MAIN   ################################
 def main():
@@ -538,21 +532,18 @@ def main():
             logger.info("14-Checking on NSX API, credentials, and Cluster Status")
             get_nsx_cluster_status()
 
-            logger.info("15-Checking on Current NSX State for vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
+            logger.info("15-Checking on NSX State for all Nodes in vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
             nsx_cluster_id = get_nsx_cluster_id(cfg_yaml['VC_CLUSTER'])
             logger.debug("nsx_cluster_id Outside of the Function is {}".format(nsx_cluster_id))
-
-            logger.info("16-Getting all NSX Nodes for vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
-            nsx_nodes = get_discovered_nodes(nsx_cluster_id)
+            nsx_nodes = get_node_states(nsx_cluster_id)
 
 
+            logger.info("16-Checking on NSX Edge Cluster Health")
+            edgecluster_id = get_edge_clusters()
+            if edgecluster_id:
+                get_edge_cluster_state(edgecluster_id)
 
-
-            logger.info("18-Checking on NSX Edge Cluster Health")
-            get_edge_clusters()
-            get_edge_cluster_state(edgecluster_id)
-
-            logger.info("19-Checking on existence of NSX T0 Router")
+            logger.info("17-Checking on existence of NSX T0 Router")
             get_tier0()
 
 
