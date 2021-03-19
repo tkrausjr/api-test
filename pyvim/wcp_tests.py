@@ -349,9 +349,9 @@ def get_edge_clusters():
         else:
             logger.info(CGRN +"Assuming there is only ONE Edge Cluster for the POC" + CEND)
             #for result in results["results"]:
-            cluster_id = results["results"][0]["id"]
-            logger.info(CGRN +"SUCCESS - Found Edge Cluster with ID {}.".format(cluster_id) + CEND)
-            return cluster_id
+            edgecluster_id = results["results"][0]["id"]
+            logger.info(CGRN +"SUCCESS - Found Edge Cluster with ID {}.".format(edgecluster_id) + CEND)
+            return edgecluster_id
 
     else:
         return 0
@@ -363,10 +363,10 @@ def get_edge_cluster_state(edgecluster_id):
         results = json.loads(json_response.text)
         state = results["state"]
         if state not in readystate:
-            logger.info(CRED +"ERROR - Edge Cluster {} found but not Ready.".format(cluster_id) + CEND)
+            logger.info(CRED +"ERROR - Edge Cluster {} found but not Ready.".format(edgecluster_id) + CEND)
             return 0
         else:
-            logger.info(CGRN +"SUCCESS - Edge Cluster {} is Ready.".format(cluster_id) + CEND)
+            logger.info(CGRN +"SUCCESS - Edge Cluster {} is Ready.".format(edgecluster_id) + CEND)
             return 1
     else:
         return 0
@@ -540,7 +540,7 @@ def main():
 
             logger.info("16-Checking on NSX Edge Cluster Health")
             edgecluster_id = get_edge_clusters()
-            if edgecluster_id:
+            if edgecluster_id != None:
                 get_edge_cluster_state(edgecluster_id)
 
             logger.info("17-Checking on existence of NSX T0 Router")
