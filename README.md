@@ -15,7 +15,8 @@ WCP-Precheck projects aims to make POC's less painful for customers and overall 
 - [x] Validate that HA is enabled on the specified cluster.
 - [x] Validate that DRS is enabled and set to Fully Automated Mode on the specified cluster.
 - [x] Validate that a compatible NSX-T VDS exists.
-- [ ] Validate that at leaset one content library is created on the vCenter.
+- [x] Validate that at leaset one content library is created on the vCenter.
+- [x] NTP driff between vCenter and ESXi hosts in Cluster
 ​
 ---
 ### NSX based networking
