@@ -320,8 +320,7 @@ def get_content_library(vc_session,vc_host):
                 if json_response.ok:
                     cl_library = json.loads(json_response.text)["value"]
                     logger.info(CGRN +"SUCCESS - Found Content Library named {}".format(cl_library["name"]) + CEND )
-                    if cl_library["name"] == cl_name:
-                        return cl_library["id"]
+                    return cl_library["id"]
                 else:
                     logger.info(CRED +"ERROR - Unable to return info about content library " + CEND )
     else:
