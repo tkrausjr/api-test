@@ -189,7 +189,7 @@ def detect_time_drift(host_times):
         logger.error(CRED+"ERROR - Max Time Drift between all nodes is {} which is higher than configured Max.".format(delta)+ CEND)
     
     
-    
+  
     
 
 # retrieve SPBM API endpoint
@@ -309,6 +309,27 @@ def get_vc_time(vc_session,vc_host):
         logger.error(CRED + "ERROR - Received Status Code {} ".format(json_response.status_code) + CEND) 
         host_times[vc_host]=None
     return host_times
+
+def get_content_library(vc_session,vc_host):
+    json_response = vc_session.get('https://' + vc_host + '/rest/com/vmware/content/library')
+    if json_response.ok:
+        results = json.loads(json_response.text)["value"]
+        if len(results)== 0:
+              logger.info(CRED +"ERROR - No content libraries found on vCenter" + CEND )
+        else:
+            for result in results:
+                json_response = s.get('https://' + vc_host + '/rest/com/vmware/content/library/id:' + result)
+                if json_response.ok:
+                    cl_library = json.loads(json_response.text)["value"]
+                    logger.info(CGRN +"SUCCESS - Found Content Library named {}".format(cl_library["name"]) + CEND )
+                    if cl_library["name"] == cl_name:
+                        return cl_library["id"]
+                else:
+                    logger.info(CRED +"ERROR - Unable to return info about content library " + CEND )
+    else:
+        logger.info(CRED +"ERROR - Unable to return info about content libraries. " + CEND )
+    return 0  
+
 
 def get_nsx_cluster_status():    
     try:
@@ -549,7 +570,9 @@ def main():
     logger.info("11-Checking max time deltas on ESXi and vCenter hosts is less than 30")
     detect_time_drift(host_times)
    
-
+    # Check existent of a Content Library
+    logger.info("11-Checking for existence and configuration of Content Library")
+    content_library_id = get_content_library(vc_session,cfg_yaml['VC_HOST'])
 
         
 
