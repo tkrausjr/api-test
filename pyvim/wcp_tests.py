@@ -166,7 +166,7 @@ def get_host_times(esx_hosts, host_times):
             logger.info("ESXi Host {} Corrected time is {}.".format(host.name,corrected_time)+ CEND)
         else:
             logger.error(CRED+"ERROR - Cannot check time on ESXi Host {}. It is not responding.".format(host.name)+ CEND)
-            host_time[host.name]=None
+            host_times[host.name]=None
 
     return host_times
 
