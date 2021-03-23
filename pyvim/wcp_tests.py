@@ -316,7 +316,7 @@ def get_content_library(vc_session,vc_host):
               logger.info(CRED +"ERROR - No content libraries found on vCenter" + CEND )
         else:
             for result in results:
-                json_response = s.get('https://' + vc_host + '/rest/com/vmware/content/library/id:' + result)
+                json_response = vc_session.get('https://' + vc_host + '/rest/com/vmware/content/library/id:' + result)
                 if json_response.ok:
                     cl_library = json.loads(json_response.text)["value"]
                     logger.info(CGRN +"SUCCESS - Found Content Library named {}".format(cl_library["name"]) + CEND )
