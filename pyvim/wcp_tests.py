@@ -30,7 +30,7 @@ CEND = '\033[0m'
 CGRN = '\033[92m'
 
 parser = argparse.ArgumentParser(description='vcenter_checks.py validates environments for succcesful Supervisor Clusters setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify environment information to test. Find additional information at: gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git')
-parser.add_argument('--version', action='version',version='%(prog)s v0.02')
+parser.add_argument('--version', action='version',version='%(prog)s v0.6')
 parser.add_argument('-n','--networking',choices=['nsxt','vsphere'], help='Networking Environment(nsxt, vsphere)', default='vsphere')
 parser.add_argument('-v', '--verbosity', nargs="?", choices=['INFO','DEBUG'], default="INFO")
 network_type=parser.parse_args().networking
