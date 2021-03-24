@@ -47,9 +47,10 @@ WCP-Precheck projects aims to make POC's less painful for customers and overall 
 
 
 
+### (Coming Soon) Running from a Docker Container
 
 
-### Preparation steps before you test the environment.
+### Preparation steps before running the script locally
 On Ubuntu 18.04 with Python3 already installed.
 ```
 git clone https://gitlab.eng.vmware.com/TKGS-TSL/wcp-precheck.git              
@@ -60,7 +61,10 @@ cd wcp-precheck/pyvim
 chmod +x ./wcp_tests.py 
 cp ./test_params.yaml ~/test_params.yaml
 vi ~/test_params.yaml    ### See Below of explanation
-pip install pyvmomi
+pip3 install pyVmomi
+pip3 install pyaml
+pip3 install requests
+pip3 install pyVim
 ```
 
 ### Parameters file used for input values to Validate
