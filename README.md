@@ -15,7 +15,8 @@ WCP-Precheck projects aims to make POC's less painful for customers and overall 
 - [x] Validate that HA is enabled on the specified cluster.
 - [x] Validate that DRS is enabled and set to Fully Automated Mode on the specified cluster.
 - [x] Validate that a compatible NSX-T VDS exists.
-- [ ] Validate that at leaset one content library is created on the vCenter.
+- [x] Validate that at leaset one content library is created on the vCenter.
+- [x] NTP driff between vCenter and ESXi hosts in Cluster
 ​
 ---
 ### NSX based networking
@@ -44,25 +45,7 @@ WCP-Precheck projects aims to make POC's less painful for customers and overall 
 - [x] Validate successful login access to HAProxy VM's API endpoint.
 
 
-
-
-
-
-### Preparation steps before you test the environment.
-On Ubuntu 18.04 with Python3 already installed.
-```
-git clone https://gitlab.eng.vmware.com/TKGS-TSL/wcp-precheck.git              
-Cloning into 'wcp-precheck'...
-Username for 'https://gitlab.eng.vmware.com':   <VMware User ID IE njones>
-Password for 'https://kraust@gitlab.eng.vmware.com':  <VMware Password>
-cd wcp-precheck/pyvim
-chmod +x ./wcp_tests.py 
-cp ./test_params.yaml ~/test_params.yaml
-vi ~/test_params.yaml    ### See Below of explanation
-pip install pyvmomi
-```
-
-### Parameters file used for input values to Validate
+## Parameters file used for input values to Validate
 Fill in the parameters file named test_params.yaml. Place this parameters file  in $HOME on a Linux or OSX system where the scripts will be run from.
 ``` yaml
 ### COMMON SETTINGS
@@ -119,7 +102,36 @@ ESX_IPS:
 ESX_USR: 'root'               #  ESX host username
 ESX_PWD: '***********'           #  ESX host password
 ``` 
-### Validating the environment.
+
+## Running the Pre-checks
+You have two options for running the environment prechecks. Both options require you to create the **test_params.yaml** file in the $HOME directory of the linux machine where you will either run the script (locally or via Docker container). You should copy paste the sample **test_params.yaml** file from this repo into your $HOME directory as a starting point and update the values for the environment being tested.
+
+### Option 1(Preferred) - Run from a Docker Container on a host with Docker and access to VM Management Network
+
+On any nix machine with Docker already installed.
+```
+docker run -it --rm -v $HOME:/root -w /usr/src/app mytkrausjr/py3-wcp-precheck:v6 python wcp_tests.py -n vsphere
+```
+
+### Option 2 - Run script locally on Linux machine with access to VM Management Network
+
+On Ubuntu 18.04 with Python3 already installed.
+```
+git clone https://gitlab.eng.vmware.com/TKGS-TSL/wcp-precheck.git              
+Cloning into 'wcp-precheck'...
+Username for 'https://gitlab.eng.vmware.com':   <VMware User ID IE njones>
+Password for 'https://kraust@gitlab.eng.vmware.com':  <VMware Password>
+cd wcp-precheck/pyvim
+chmod +x ./wcp_tests.py 
+cp ./test_params.yaml ~/test_params.yaml
+vi ~/test_params.yaml    ### See Below of explanation
+pip3 install pyVmomi
+pip3 install pyaml
+pip3 install requests
+pip3 install pyVim
+```
+
+
 To run the validation script
 ``` bash
 
