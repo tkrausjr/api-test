@@ -110,8 +110,8 @@ def vc_connect(vchost, vcuser, vcpass):
         logger.info(CGRN + "SUCCESS-Connected to vCenter {}".format(si.content.about.name) + CEND)
         return si, si.RetrieveContent()
     except IOError as e:
-        logger.error(CRED +"ERROR - connecting to vCenter, ", vchost  + CEND)
-        logger.error(CRED +"Error is: ", e + CEND)
+        logger.error(CRED +"ERROR - connecting to vCenter, {}".format(vchost)  + CEND)
+        logger.error(CRED +"Error is: {}".format(e) + CEND)
         logger.error("Exiting program. Please check vCenter connectivity and Name Resolution: ")
         sys.exit(e)
 
@@ -145,13 +145,11 @@ def get_hosts_in_cluster(cluster):
     hosts = []
     for host in cluster.host :  # Iterate through the hosts in the cluster
         hosts.append(host)
-        print ("Host Name = {} ".format( host.name))
+        logger.info ("Found ESX Host {} incluster {}".format( host.name,cluster.name))
         if host.overallStatus != "green":
             logger.error(CRED+"ERROR - ESXi Host {} overallStatus is not Green. Please correct any issues with this host.".format(host.name ) + CEND)
         else:
-            logger.info(CGRN+"SUCCESS - ESXi Host {} overallStatus is Green. ".format(host.name)+ CEND)
-            hosts.append(host)
-        
+            logger.info(CGRN+"SUCCESS - ESXi Host {} overallStatus is Green. ".format(host.name)+ CEND)      
     return hosts
 
 
@@ -444,24 +442,44 @@ def get_edge_clusters():
         return 0
 
 def get_edge_cluster_state(edgecluster_id):
-    readystate = ["NODE_READY","TRANSPORT_NODE_READY","success"]
+    readystate = ["NODE_READY","TRANSPORT_NODE_READY","success","in_sync"]
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/edge-clusters/'+edgecluster_id+'/state' ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if json_response.ok:
         results = json.loads(json_response.text)
         state = results["state"]
         if state not in readystate:
-            logger.info(CRED +"ERROR - Edge Cluster {} found but not Ready.".format(edgecluster_id) + CEND)
+            logger.info(CRED +"ERROR - Edge Cluster {} found but not Ready.".format(results[edgecluster_id]) + CEND)
             return 0
         else:
             logger.info(CGRN +"SUCCESS - Edge Cluster {} is Ready.".format(edgecluster_id) + CEND)
-            return 1
     else:
         return 0
+
+def get_edge_cluster_nodes(edgecluster_id):
+    #logger.info(CRED +"NOTE - INSIDE THE get_edge_cluster_nodes FUNCTION." + CEND)
+    edges = []
+    json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/edge-clusters/'+edgecluster_id ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
+    if json_response.ok:
+        results = json.loads(json_response.text)
+        members = results["members"]
+        logger.debug("Edge cluster Node json_response is OK." + CEND)
+        if len(members) == 0:
+            logger.info(CRED +"ERROR - Edge Cluster {} has no members.".format(edgecluster_id) + CEND)
+        else: 
+            for member in members:
+                logger.info(CGRN + "SUCCESS -Found Edge Node {} in Edge Cluster {}.".format(member["transport_node_id"] ,edgecluster_id) + CEND)
+                transport_node_id == member["transport_node_id"]  
+                edges.append(transport_node_id)   
+        return edges
+    else:
+        logger.error(CRED + "ERROR - Could not establish session to VC, status_code ".format(session.status_code) + CEND) 
+        return 0
+
 
 def get_tier0():
     json_response = nsx_session.get('https://'+nsxmgr+'/policy/api/v1/infra/tier-0s', auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if not json_response.ok:
-        print ("Session creation is failed, please check nsxmgr connection")
+        logger.info(CRED +"Session creation is failed, please check nsxmgr connection" + CEND)
         return 0
     else:
         results = json.loads(json_response.text)
@@ -654,16 +672,19 @@ def main():
             edgecluster_id = get_edge_clusters()
             if edgecluster_id != None:
                 get_edge_cluster_state(edgecluster_id)
+                logger.info("16a-Checking Edge Node Size is Large")
+                edges = get_edge_cluster_nodes(edgecluster_id)
+            
 
-            logger.info("17-Checking on existence of NSX T0 Router")
+            logger.info("18-Checking on existence of NSX T0 Router")
             get_tier0()
 
 
         except vmodl.MethodFault as e:
-            print(CRED +"\tCaught vmodl fault: %s" % e.msg+ CEND)
+            logger.info(CRED +"\tCaught vmodl fault: %s" % e.msg+ CEND)
             pass
         except Exception as e:
-            print(CRED +"\tCaught exception: %s" % str(e)+ CEND)
+            logger.info(CRED +"\tCaught exception: %s" % str(e)+ CEND)
             pass
 
     logger.info("************************************************")
