@@ -110,11 +110,11 @@ You have two options for running the environment prechecks. Both options require
 
 On any nix machine with Docker already installed.
 ```
-docker run -it --rm -v $HOME:/root -w /usr/src/app mytkrausjr/py3-wcp-precheck:v6 python wcp_tests.py -n vsphere
+docker run -it --rm -v $HOME:/root -w /usr/src/app mytkrausjr/py3-wcp-precheck:v7 python wcp_tests.py -n vsphere
 ```
 **NOTE:** On systems with SELinux enabled you need to pass an extra mount option "z" to the end of the volume definition in docker run. Without this option you will get a permission error when you run the container.
 ```
-docker run -it --rm -v $HOME:/root:z -w /usr/src/app mytkrausjr/py3-wcp-precheck:v6 python wcp_tests.py -n vsphere
+docker run -it --rm -v $HOME:/root:z -w /usr/src/app mytkrausjr/py3-wcp-precheck:v7 python wcp_tests.py -n vsphere
 ```
 
 ### Option 2 - Run script locally on Linux machine with access to VM Management Network
