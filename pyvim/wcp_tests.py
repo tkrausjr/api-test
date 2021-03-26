@@ -147,9 +147,9 @@ def get_hosts_in_cluster(cluster):
         hosts.append(host)
         logger.info ("Found ESX Host {} incluster {}".format( host.name,cluster.name))
         if host.overallStatus != "green":
-            logger.error(CRED+"ERROR - ESXi Host {} overallStatus is not Green. Please correct any issues with this host.".format(host.name ) + CEND)
+            logger.error(CRED+"ERROR - ESXi Host {} overall Status is not Green. Please correct any issues with this host.".format(host.name ) + CEND)
         else:
-            logger.info(CGRN+"SUCCESS - ESXi Host {} overallStatus is Green. ".format(host.name)+ CEND)      
+            logger.info(CGRN+"SUCCESS - ESXi Host {} overall Status is Green. ".format(host.name)+ CEND)      
     return hosts
 
 
@@ -161,7 +161,7 @@ def get_host_times(esx_hosts, host_times):
             logger.debug("ESXi Host {} time is {}.".format(host.name,host_time)+ CEND)
             corrected_time = host_time.strftime('%H:%M:%S')
             host_times[host.name]=corrected_time
-            logger.info("ESXi Host {} Corrected time is {}.".format(host.name,corrected_time)+ CEND)
+            logger.info("ESXi Host {} 24hr time is {}.".format(host.name,corrected_time)+ CEND)
         else:
             logger.error(CRED+"ERROR - Cannot check time on ESXi Host {}. It is not responding.".format(host.name)+ CEND)
     return host_times
@@ -468,12 +468,13 @@ def get_edge_cluster_nodes(edgecluster_id):
         else: 
             for member in members:
                 logger.info(CGRN + "SUCCESS -Found Edge Node {} in Edge Cluster {}.".format(member["transport_node_id"] ,edgecluster_id) + CEND)
-                transport_node_id == member["transport_node_id"]  
+                transport_node_id = member["transport_node_id"]  
                 edges.append(transport_node_id)   
         return edges
     else:
         logger.error(CRED + "ERROR - Could not establish session to VC, status_code ".format(session.status_code) + CEND) 
         return 0
+
 
 
 def get_tier0():
@@ -502,61 +503,61 @@ def main():
      # Common tests to be run regardless of Networking choice
     
     # Check YAML file for missing paramters 
-    logger.info("1-Checking Required YAML inputs for program: ")
+    logger.info("TEST 1 - Checking Required YAML inputs for program: ")
     for k, v in cfg_yaml.items():
         if v == None:
             logger.error(CRED +"ERROR - Missing required value for {}".format(k) + CEND) 
         else:
             logger.debug(CGRN +"SUCCESS - Found value, {} for key, {}".format(v,k)+ CEND) 
     
-    logger.info("2-Checking Network Communication for vCenter")
+    logger.info("TEST 2 - Checking Network Communication for vCenter")
     # Check if VC is resolvable and responding
-    logger.info("2a-Checking IP is Active for vCenter")
+    logger.info("TEST 2a - Checking IP is Active for vCenter")
     vc_status = check_active(cfg_yaml["VC_IP"])
-    logger.info("2b-Checking DNS Servers are reachable on network")
+    logger.info("TEST 2b - Checking DNS Servers are reachable on network")
     for dns_svr in cfg_yaml["DNS_SERVERS"]:
         check_active(dns_svr)
-    logger.info("2c-Checking Name Resolution for vCenter")
+    logger.info("TEST 2c - Checking Name Resolution for vCenter")
     checkdns(cfg_yaml["VC_HOST"], cfg_yaml["VC_IP"] )
     
-    logger.info("3-Checking VC is reachable via API using provided credentials")
+    logger.info("TEST 3 - Checking VC is reachable via API using provided credentials")
     # Connect to vCenter and return VAPI content objects
     si, vc_content = vc_connect(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
     
     # Check for THE DATACENTER
-    logger.info("4-Checking for the  Datacenter")
+    logger.info("TEST4 - Checking for the  Datacenter")
     dc = get_obj(vc_content, [vim.Datacenter], cfg_yaml['VC_DATACENTER'])
 
     # Check for the CLUSTER
-    logger.info("5-Checking for the Cluster")
+    logger.info("TEST 5 - Checking for the Cluster")
     cluster = get_cluster(dc, cfg_yaml['VC_CLUSTER'])
     cluster_id = str(cluster).split(':')[1][:-1]
     logger.debug(cluster_id)
     
     # Check Hosts in the Cluster 
-    logger.info("5a-Checking Hosts in the Cluster")
+    logger.info("TEST 5a - Checking Hosts in the Cluster")
     get_hosts_in_cluster(cluster)
 
 
     # Connect to SPBM Endpoint and existence of Storage Profiles
-    logger.info("6-Checking Existence of Storage Profiles")
-    logger.info("6a-Checking Connecting to SPBM")
+    logger.info("TEST 6 - Checking Existence of Storage Profiles")
+    logger.info("TEST 6a - Checking Connecting to SPBM")
     pbmSi, pbmContent = GetPbmConnection(si._stub)
-    logger.info("6b-Getting Storage Profiles from SPBM")
+    logger.info("TEST 6b - Getting Storage Profiles from SPBM")
     storagepolicies = cfg_yaml['VC_STORAGEPOLICIES']
     for policy in storagepolicies:
         storage_profile= get_storageprofile(policy, pbmContent )
 
     # EXTRA TEST Not Necessary - Check for a Datastore 
-    logger.info("7-Not required - Checking Existence of the Datastores")
+    logger.info("TEST 7 - Not required - Checking Existence of the Datastores")
     ds = get_obj(vc_content, [vim.Datastore], cfg_yaml['VC_DATASTORE'])
 
     # Check for the vds 
-    logger.info("8-Checking for the vds")
+    logger.info("TEST 8 - Checking for the vds")
     vds = get_obj(vc_content, [vim.DistributedVirtualSwitch], cfg_yaml['VDS_NAME'])
 
     # Create VC REST Session
-    logger.info("9-Establishing REST session to VC API")
+    logger.info("TEST 9 - Establishing REST session to VC API")
     vc_session = connect_vc_rest(cfg_yaml['VC_HOST'],cfg_yaml['VC_SSO_USER'],cfg_yaml['VC_SSO_PWD'] )
 
     ## DEBUG AND TEST BELOW
@@ -568,25 +569,28 @@ def main():
         logger.error("Datacenter ID is {}".format(datacenter_id))
 
     # Check if Cluster is Compatible with WCP
-    logger.info("10-Checking if cluster {} is WCP Compatible".format(cluster.name))
+    logger.info("TEST 10 - Checking if cluster {} is WCP Compatible".format(cluster.name))
     compatability = check_cluster_readiness(vc_session, cfg_yaml['VC_HOST'], cluster_id)
     
     # Check NTP Time settings on vCenter
-    logger.info("11-Checking time on vCenter")
+    logger.info("TEST 11 - Checking time accuracy/synchronization in environment")
+
+    # Check NTP Time settings on vCenter
+    logger.info("TEST 11a - Checking time on vCenter Appliance")
     host_times = get_vc_time( vc_session, cfg_yaml['VC_HOST'])
 
     # Check Time settings on ESXi hosts
-    logger.info("11-Checking time on ESXi hosts")
+    logger.info("TEST 11b - Checking time on ESXi hosts")
     # First return all the ESXi hosts in the cluster
     esx_hosts = get_hosts_in_cluster(cluster)
     host_times = get_host_times(esx_hosts,host_times)
 
     # Detect variances in the times among all the objects ESXi and vCenter
-    logger.info("11-Checking max time deltas on ESXi and vCenter hosts is less than 30")
+    logger.info("TEST 11c - Checking max time deltas on ESXi and vCenter hosts is less than 30")
     detect_time_drift(host_times)
    
     # Check existent of a Content Library
-    logger.info("11-Checking for existence and configuration of Content Library")
+    logger.info("TEST 12 - Checking for existence and configuration of Content Library")
     content_library_id = get_content_library(vc_session,cfg_yaml['VC_HOST'])
 
         
@@ -598,25 +602,25 @@ def main():
             logger.info("Begin vSphere Networking checks")
 
             # Check for the Primary Workload Network 
-            logger.info("11-Checking for the Primary Workload Network PortGroup")
+            logger.info("TEST 13 - Checking for the Primary Workload Network PortGroup")
             prim_wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_PRIMARY_WKLD_PG'])
 
             # Check for the Workload Network 
-            logger.info("12-Checking for the Workload Network PortGroup")
+            logger.info("TEST 14 - Checking for the Workload Network PortGroup")
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_WKLD_PG'])
             
             # Check for the HAProxy Management IP 
-            logger.info("13-Checking HAProxy Health")
-            logger.info("13a-Checking reachability of HAProxy Frontend IP")
+            logger.info("TEST 15 - Checking HAProxy Health")
+            logger.info("TEST 15a - Checking reachability of HAProxy Frontend IP")
             haproxy_status = check_active(cfg_yaml["HAPROXY_IP"])
 
             if haproxy_status != 1:
                 # Check for the HAProxy Health
-                logger.info("13b-Checking login to HAPROXY DataPlane API")
+                logger.info("TEST 15b - Checking login to HAPROXY DataPlane API")
                 check_health_with_auth("get",cfg_yaml["HAPROXY_IP"], str(cfg_yaml["HAPROXY_PORT"]), '/v2/services/haproxy/configuration/backends', 
                 cfg_yaml["HAPROXY_USER"], cfg_yaml["HAPROXY_PW"])
             else:
-                logger.info("13b-Skipping HAPROXY DataPlane API Login until IP is Active")
+                logger.info("TEST 15b - Skipping HAPROXY DataPlane API Login until IP is Active")
             
         except vmodl.MethodFault as e:
             logger.error(CRED +"Caught vmodl fault: %s" % e.msg+ CEND)
@@ -633,22 +637,22 @@ def main():
             logger.info("Begin NSX-T Networking checks")
 
             # Check for the Management VDS Port Group
-            logger.info("11-Checking for the Management VDS PortGroup")
+            logger.info("TEST 13 - Checking for the Management VDS PortGroup")
             prim_wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_MGMT_PG'])
 
             # Check for the Uplink VDS PG
-            logger.info("12-Checking for the Uplink VDS PortGroup")
+            logger.info("TEST 14 - Checking for the Uplink VDS PortGroup")
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_UPLINK_PG'])
 
             # Check for the Edge TEP PG
-            logger.info("12-Checking for the Edge TEP VDS PortGroup")
+            logger.info("TEST 15 - Checking for the Edge TEP VDS PortGroup")
             wkld_pg = get_obj(vc_content, [vim.Network], cfg_yaml['VDS_EDGE_TEP_PG'])
 
-            logger.info("13-Checking Network Communication for NSX-T Manager Unified Appliance")
+            logger.info("TEST 16 - Checking Network Communication for NSX-T Manager Unified Appliance")
             # Check if NSX Manager is resolvable and responding
-            logger.info("13a-Checking IP is Active for NSX Manager")
+            logger.info("TEST 16a - Checking IP is Active for NSX Manager")
             nsx_status = check_active(cfg_yaml["NSX_MGR_IP"])
-            logger.info("13b-Checking Name Resolution for NSX Manager")
+            logger.info("TEST 16b - Checking Name Resolution for NSX Manager")
             checkdns(cfg_yaml["NSX_MGR_HOST"], cfg_yaml["NSX_MGR_IP"] )
 
             # Setup NSX Manager Session Information
@@ -659,24 +663,24 @@ def main():
             nsxuser=cfg_yaml["NSX_USER"]
             nsxpassword=cfg_yaml["NSX_PASSWORD"]
             
-            logger.info("14-Checking on NSX API, credentials, and Cluster Status")
+            logger.info("TEST 17 - Checking on NSX API, credentials, and Cluster Status")
             get_nsx_cluster_status()
 
-            logger.info("15-Checking on NSX State for all Nodes in vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
+            logger.info("TEST 18 - Checking on NSX State for all Nodes in vSphere cluster {}".format(cfg_yaml['VC_CLUSTER']))
             nsx_cluster_id = get_nsx_cluster_id(cfg_yaml['VC_CLUSTER'])
             logger.debug("nsx_cluster_id Outside of the Function is {}".format(nsx_cluster_id))
             nsx_nodes = get_node_states(nsx_cluster_id)
 
 
-            logger.info("16-Checking on NSX Edge Cluster Health")
+            logger.info("TEST 19 - Checking on NSX Edge Cluster Health")
             edgecluster_id = get_edge_clusters()
             if edgecluster_id != None:
                 get_edge_cluster_state(edgecluster_id)
-                logger.info("16a-Checking Edge Node Size is Large")
+                logger.info("TEST 19a - Checking Edge Node Size is Large")
                 edges = get_edge_cluster_nodes(edgecluster_id)
             
 
-            logger.info("18-Checking on existence of NSX T0 Router")
+            logger.info("TEST 20 - Checking on existence of NSX T0 Router")
             get_tier0()
 
 
