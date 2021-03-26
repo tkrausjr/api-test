@@ -53,8 +53,6 @@ DOMAIN: 'tpmlab.vmware.com'
 NTP_SERVER: 'time.vmware.com'
 DNS_SERVERS:
   - '10.173.13.90'
-
-### Section for VC
 VC_HOST: 'vcsa.tpmlab.vmware.com'    # VCSA FQDN or IP MUST ADD A Rec to DNS
 VC_IP: '10.173.13.81'                      # VCSA IP
 VC_SSO_USER: 'administrator@vsphere.local'
@@ -90,9 +88,9 @@ NSX_USER: 'admin'   # API Username for NSX-T Manager Appliance
 NSX_PASSWORD: '***********'    # API Password for NSX-T Manager Appliance
 
 ### Section for WCP Supervisor Cluster Deployment
-WCP_MGMT_STARTINGIP:
-WCP_MGMT_MASK:
-WCP_MGMT_GATEWAY: 
+WCP_MGMT_STARTINGIP: '192.168.100.141'
+WCP_MGMT_MASK: '255.255.255.0'
+WCP_MGMT_GATEWAY: '192.168.100.1'
 
 ### Section for ESX Hosts - TBD future
 ESX_IPS:
