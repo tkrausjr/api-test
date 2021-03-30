@@ -31,7 +31,7 @@ CGRN = '\033[92m'
 
 parser = argparse.ArgumentParser(description='vcenter_checks.py validates environments for succcesful Supervisor Clusters setup in vSphere 7 with Tanzu. Uses YAML configuration files to specify environment information to test. Find additional information at: gitlab.eng.vmware.com:TKGS-TSL/wcp-precheck.git')
 parser.add_argument('--version', action='version',version='%(prog)s v0.6')
-parser.add_argument('-n','--networking',choices=['nsxt','vsphere'], help='Networking Environment(nsxt, vsphere)', default='vsphere')
+parser.add_argument('-n','--networking',choices=['nsxt','vsphere'], help='Networking Environment(nsxt, vsphere)', default='nsxt')
 parser.add_argument('-v', '--verbosity', nargs="?", choices=['INFO','DEBUG'], default="INFO")
 network_type=parser.parse_args().networking
 verbosity = parser.parse_args().verbosity
@@ -457,7 +457,7 @@ def get_edge_cluster_state(edgecluster_id):
 
 def get_edge_cluster_nodes(edgecluster_id):
     #logger.info(CRED +"NOTE - INSIDE THE get_edge_cluster_nodes FUNCTION." + CEND)
-    edges = []
+    edge_nodes = []
     json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/edge-clusters/'+edgecluster_id ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
     if json_response.ok:
         results = json.loads(json_response.text)
@@ -468,14 +468,34 @@ def get_edge_cluster_nodes(edgecluster_id):
         else: 
             for member in members:
                 logger.info(CGRN + "SUCCESS -Found Edge Node {} in Edge Cluster {}.".format(member["transport_node_id"] ,edgecluster_id) + CEND)
-                transport_node_id = member["transport_node_id"]  
-                edges.append(transport_node_id)   
-        return edges
+                tn_node_id = member["transport_node_id"]  
+                edge_nodes.append(member["transport_node_id"])   
+        logger.info(" - Found edges {} on Edge Cluster {}.".format(*edge_nodes,edgecluster_id) + CEND)
+        return edge_nodes
     else:
-        logger.error(CRED + "ERROR - Could not establish session to VC, status_code ".format(session.status_code) + CEND) 
-        return 0
+        logger.error(CRED + "ERROR - Could not establish session to NSX-T, status_code ".format(json_response.status_code) + CEND) 
+        return edge_nodes
 
-
+def get_edge_node_state(edge_nodes):
+    logger.debug("Inside get_edge_node_state function" + CEND)
+    if len(edge_nodes) == 0:
+        logger.error(CRED +"ERROR - No Edges found in Edge Cluster" + CEND)
+    else:
+        for edge_node in edge_nodes:
+            logger.info("Working on edge {}".format(edge_node) + CEND)
+            json_response = nsx_session.get('https://'+nsxmgr+'/api/v1/transport-nodes/'+edge_node ,auth=HTTPBasicAuth(nsxuser,nsxpassword))
+            if json_response.ok:
+                results = json.loads(json_response.text)
+                deployment_size = results["node_deployment_info"]["deployment_config"]["form_factor"]
+                logger.debug("Edge Node json_response is {}.".format(results) + CEND)
+                logger.debug("Edge Node form_factor size is \n {}".format(deployment_size) + CEND)
+                if deployment_size != "LARGE":
+                    logger.error(CRED +"ERROR - Edge {} is NOT Large but is currently".format(edge_node, deployment_size) + CEND)
+                else: 
+                    logger.info(CGRN + "SUCCESS - Edge {} size is Large. ".format(edge_node) + CEND)
+            else:
+                logger.error(CRED + "ERROR - Could not establish session to NSX-T, status_code ".format(json_response.status_code) + CEND) 
+                return 0
 
 def get_tier0():
     json_response = nsx_session.get('https://'+nsxmgr+'/policy/api/v1/infra/tier-0s', auth=HTTPBasicAuth(nsxuser,nsxpassword))
@@ -538,7 +558,7 @@ def main():
     logger.info("TEST 5a - Checking Hosts in the Cluster")
     get_hosts_in_cluster(cluster)
 
-
+    
     # Connect to SPBM Endpoint and existence of Storage Profiles
     logger.info("TEST 6 - Checking Existence of Storage Profiles")
     logger.info("TEST 6a - Checking Connecting to SPBM")
@@ -555,6 +575,8 @@ def main():
     # Check for the vds 
     logger.info("TEST 8 - Checking for the vds")
     vds = get_obj(vc_content, [vim.DistributedVirtualSwitch], cfg_yaml['VDS_NAME'])
+
+    
 
     # Create VC REST Session
     logger.info("TEST 9 - Establishing REST session to VC API")
@@ -593,7 +615,7 @@ def main():
     logger.info("TEST 12 - Checking for existence and configuration of Content Library")
     content_library_id = get_content_library(vc_session,cfg_yaml['VC_HOST'])
 
-        
+     
 
     ###### If networking type is vSphere  ######
     if network_type=='vsphere':
@@ -671,16 +693,17 @@ def main():
             logger.debug("nsx_cluster_id Outside of the Function is {}".format(nsx_cluster_id))
             nsx_nodes = get_node_states(nsx_cluster_id)
 
-
-            logger.info("TEST 19 - Checking on NSX Edge Cluster Health")
+            logger.info("TEST 19 - Checking on NSX Edge Health")
             edgecluster_id = get_edge_clusters()
             if edgecluster_id != None:
                 get_edge_cluster_state(edgecluster_id)
                 logger.info("TEST 19a - Checking Edge Node Size is Large")
+                edges = []
                 edges = get_edge_cluster_nodes(edgecluster_id)
+                logger.debug("Edges =".format( *edges))
             
-
-            logger.info("TEST 20 - Checking on existence of NSX T0 Router")
+            get_edge_node_state(edges) 
+            
             get_tier0()
 
 
