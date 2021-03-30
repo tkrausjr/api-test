@@ -467,10 +467,10 @@ def get_edge_cluster_nodes(edgecluster_id):
             logger.info(CRED +"ERROR - Edge Cluster {} has no members.".format(edgecluster_id) + CEND)
         else: 
             for member in members:
-                logger.info(CGRN + "SUCCESS -Found Edge Node {} in Edge Cluster {}.".format(member["transport_node_id"] ,edgecluster_id) + CEND)
+                logger.info("Found Edge Node {} in Edge Cluster {}.".format(member["transport_node_id"] ,edgecluster_id) + CEND)
                 tn_node_id = member["transport_node_id"]  
                 edge_nodes.append(member["transport_node_id"])   
-        logger.info(" - Found edges {} on Edge Cluster {}.".format(*edge_nodes,edgecluster_id) + CEND)
+        logger.info(CGRN + "SUCCES - Found {} edges, {} on Edge Cluster {}.".format(str(len(members)),*edge_nodes,edgecluster_id) + CEND)
         return edge_nodes
     else:
         logger.error(CRED + "ERROR - Could not establish session to NSX-T, status_code ".format(json_response.status_code) + CEND) 
