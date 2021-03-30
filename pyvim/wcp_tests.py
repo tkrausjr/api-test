@@ -184,9 +184,6 @@ def detect_time_drift(host_times):
     else:
         logger.error(CRED+"ERROR - Max Time Drift between all nodes is {} which is higher than configured Max.".format(delta)+ CEND)
     
-    
-  
-    
 
 # retrieve SPBM API endpoint
 def GetPbmConnection(vpxdStub):
@@ -213,26 +210,26 @@ def GetPbmConnection(vpxdStub):
 def get_storageprofile(sp_name, pbmContent ):
     profiles = []
     pm = pbmContent.profileManager
-    # Get all Storage Profiles
+    # Get all Storage Policies
     profileIds = pm.PbmQueryProfile(resourceType=pbm.profile.ResourceType(
         resourceType="STORAGE"), profileCategory="REQUIREMENT"
     )
     logger.debug(profileIds)
     if len(profileIds) > 0:
-        logger.debug("Retrieved Storage Profiles.")
+        logger.debug("Retrieved Storage Policies.")
         profiles = pm.PbmRetrieveContent(profileIds=profileIds)
         obj = None
         for profile in profiles:
             logger.debug("SP Name: %s " % profile.name)
             if profile.name == sp_name:
-                logger.info(CGRN+"SUCCESS - Found Storage Profile {}.".format(sp_name)+ CEND)
+                logger.info(CGRN+"SUCCESS - Found Storage Policy {}.".format(sp_name)+ CEND)
                 obj = profile
                 break
         if not obj:
-            logger.error(CRED + "ERROR - Storage Profile {} not found".format(sp_name)+ CEND) 
+            logger.error(CRED + "ERROR - Storage Policy {} not found".format(sp_name)+ CEND) 
         return obj        
     else:
-        logger.error(CRED + "ERROR - No Storage Profiles found or defined "+ CEND)
+        logger.error(CRED + "ERROR - No Storage Policies found or defined "+ CEND)
 
 
 def check_health_with_auth(verb, endpoint, port, url, username, password):
@@ -559,11 +556,11 @@ def main():
     get_hosts_in_cluster(cluster)
 
     
-    # Connect to SPBM Endpoint and existence of Storage Profiles
-    logger.info("TEST 6 - Checking Existence of Storage Profiles")
-    logger.info("TEST 6a - Checking Connecting to SPBM")
+    # Connect to SPBM Endpoint and existence of Storage Policies
+    logger.info("TEST 6 - Checking Existence of Storage Policies")
+    logger.info("TEST 6a - Checking Connection to SPBM")
     pbmSi, pbmContent = GetPbmConnection(si._stub)
-    logger.info("TEST 6b - Getting Storage Profiles from SPBM")
+    logger.info("TEST 6b - Getting Storage Policies from SPBM")
     storagepolicies = cfg_yaml['VC_STORAGEPOLICIES']
     for policy in storagepolicies:
         storage_profile= get_storageprofile(policy, pbmContent )
@@ -575,8 +572,6 @@ def main():
     # Check for the vds 
     logger.info("TEST 8 - Checking for the vds")
     vds = get_obj(vc_content, [vim.DistributedVirtualSwitch], cfg_yaml['VDS_NAME'])
-
-    
 
     # Create VC REST Session
     logger.info("TEST 9 - Establishing REST session to VC API")
