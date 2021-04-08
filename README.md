@@ -69,8 +69,8 @@ VC_STORAGEPOLICIES:          # Storage Policies to use
 
 ### Section for vSphere Networking Deployments
 VDS_NAME: 'vds-1'
-VDS_MGMT_PG: 'management-vm'
-VDS_PRIMARY_WKLD_PG: 'not_there'
+VDS_MGMT_PG: 'management-vm'  # Management for Supervisor Cluster and HAProxy Mgmt Interface
+VDS_PRIMARY_WKLD_PG: 'not_there'  # Combined PG for Workload Network and HAProxy VIP Network
 HAPROXY_IP: '192.168.100.163'
 HAPROXY_PORT: 5556      # HAProxy Dataplane API Mgmt Port chosen during OVA Deployment
 HAPROXY_IP_RANGE_START: '10.173.13.38' # HAProxy LB IP Range chosen during OVA Deployment
