@@ -42,12 +42,5 @@ WCP_MGMT_STARTINGIP: '192.168.100.141'
 WCP_MGMT_MASK: '255.255.255.0'
 WCP_MGMT_GATEWAY: '192.168.100.1'
 
-### Section for ESX Hosts - TBD future
-ESX_IPS:
-  - '10.173.13.167'
-  - '10.173.13.168'
-  - '10.173.13.169'
-ESX_USR: 'root'               #  ESX host username
-ESX_PWD: '*************'           #  ESX host password
 
 
