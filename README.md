@@ -38,9 +38,6 @@ WCP-Precheck project aims to make POC's and vSphere with Tanzu installations les
   ### (COMING SOON) VDS based AVI Lite config
   - [ ] AVI Controller liveness probes that check each network connectivity and the frontend VIP IP's
   - [ ] AVI Service Engine Health.
-  - [ ] ?
-  - [ ] ?
-  - [ ] ? 
 
   ---
   ### VDS based HAProxy config
@@ -52,8 +49,8 @@ WCP-Precheck project aims to make POC's and vSphere with Tanzu installations les
   - [x] Validate successful login access to HAProxy VM's API endpoint.
 
 
-## Parameters file used for input values to Validate
-Fill in the parameters file named test_params.yaml. Place this parameters file  in $HOME on a Linux or OSX system where the script will be run from.
+## Create & Populate the Parameters file used for input values 
+Download the sample parameters file from this repo or copy and paste below to a parameters file named **test_params.yaml** in the $HOME folder on the system where you will run the validation script.
 ``` yaml
 ### COMMON SETTINGS
 DOMAIN: 'tpmlab.vmware.com'
@@ -69,7 +66,6 @@ VC_CLUSTER:  'Nested-TKG-Cluster'
 VC_STORAGEPOLICIES:          # Storage Policies to use 
   - 'thin'  
   - 'thinner'      
-VC_DATASTORE: '66-datastore3'    # FUTURE - If needed 
 
 ### Section for vSphere Networking Deployments
 VDS_NAME: 'vds-1'
@@ -99,13 +95,7 @@ WCP_MGMT_STARTINGIP: '192.168.100.141'
 WCP_MGMT_MASK: '255.255.255.0'
 WCP_MGMT_GATEWAY: '192.168.100.1'
 
-### Section for ESX Hosts - TBD future
-ESX_IPS:
-  - '10.173.13.167'
-  - '10.173.13.168'
-  - '10.173.13.169'
-ESX_USR: 'root'               #  ESX host username
-ESX_PWD: '***********'           #  ESX host password
+
 ``` 
 
 ## Running the Pre-checks
