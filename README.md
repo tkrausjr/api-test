@@ -71,7 +71,6 @@ VC_STORAGEPOLICIES:          # Storage Policies to use
 VDS_NAME: 'vds-1'
 VDS_MGMT_PG: 'management-vm'
 VDS_PRIMARY_WKLD_PG: 'not_there'
-VDS_WKLD_PG: 'ext-uplink-edge'
 HAPROXY_IP: '192.168.100.163'
 HAPROXY_PORT: 5556      # HAProxy Dataplane API Mgmt Port chosen during OVA Deployment
 HAPROXY_IP_RANGE_START: '10.173.13.38' # HAProxy LB IP Range chosen during OVA Deployment
