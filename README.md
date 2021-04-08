@@ -62,8 +62,8 @@ VC_IP: '10.173.13.81'                      # VCSA IP
 VC_SSO_USER: 'administrator@vsphere.local'
 VC_SSO_PWD:  '***********'
 VC_DATACENTER: 'Datacenter'
-VC_CLUSTER:  'Nested-TKG-Cluster'
-VC_STORAGEPOLICIES:          # Storage Policies to use 
+VC_CLUSTER:  'Nested-TKG-Cluster'    # VSphere HA/DRS Cluster created for Tanzu Supervisor Cluster
+VC_STORAGEPOLICIES:          # VM Storage Policies created for Tanzu
   - 'thin'  
   - 'thinner'      
 
@@ -90,7 +90,7 @@ NSX_USER: 'admin'   # API Username for NSX-T Manager Appliance
 NSX_PASSWORD: '***********'    # API Password for NSX-T Manager Appliance
 
 ### Section for WCP Supervisor Cluster Deployment
-WCP_MGMT_STARTINGIP: '192.168.100.141'
+WCP_MGMT_STARTINGIP: '192.168.100.141'  # 1st IP of 5 consecutive needed for S.C. on Mgmt net
 WCP_MGMT_MASK: '255.255.255.0'
 WCP_MGMT_GATEWAY: '192.168.100.1'
 
