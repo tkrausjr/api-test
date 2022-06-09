@@ -137,7 +137,7 @@ def main():
     actions_list = ["get_owners", "get_owner_details", "get_vets", "add_owner", "add_pet"]
 
     while True:
-        weighted_random_actions = random.choices(actions_list, weights=(70, 70, 60, 20, 30), k=1)
+        weighted_random_actions = random.choices(actions_list, weights=(50, 70, 60, 20, 30), k=1)
         print(weighted_random_actions)
 
         if weighted_random_actions[0] == 'get_owners':
@@ -159,7 +159,7 @@ def main():
             print(pet_to_add)
             post_pets(endpoint, pet_to_add)
 
-        delay= randint(4, 10)
+        delay= randint(25, 1200)
         print("Sleeping for "+str(delay)+"s")
         sleep(delay)
 
