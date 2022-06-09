@@ -14,7 +14,7 @@ endpoint = "http://localhost"
 
 currentDirectory = os.getcwd()
 homedir = os.getenv('HOME')
-cfg_yaml = yaml.load(open(homedir+"/test_params.yaml"), Loader=yaml.Loader)
+#cfg_yaml = yaml.load(open(homedir+"/test_params.yaml"), Loader=yaml.Loader)
 dictionary = open("english-dict.txt", "r").read()
 words=dictionary.split()
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
